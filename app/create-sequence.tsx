@@ -1,0 +1,155 @@
+// File: app/create-sequence.tsx
+
+import React, { useState } from 'react';
+import { StyleSheet, TextInput, TouchableOpacity, FlatList, View as RNView } from 'react-native';
+import { Text, View } from '@/components/Themed';
+import { useDua } from '@/contexts/DuaContext';
+import { useRouter } from 'expo-router';
+
+export default function CreateSequenceScreen() {
+  const [sequenceName, setSequenceName] = useState('');
+  const [selectedDuas, setSelectedDuas] = useState<string[]>([]);
+  const { duas, addSequence } = useDua();
+  const router = useRouter();
+
+  const handleCreateSequence = () => {
+    if (sequenceName && selectedDuas.length > 0) {
+      const newSequence = {
+        id: `seq${Date.now()}`,
+        name: sequenceName,
+        duaIds: selectedDuas,
+      };
+      addSequence(newSequence);
+      router.back();
+    }
+  };
+
+  const toggleDuaSelection = (duaId: string) => {
+    setSelectedDuas(prev => {
+      if (prev.includes(duaId)) {
+        return prev.filter(id => id !== duaId);
+      } else {
+        return [...prev, duaId];
+      }
+    });
+  };
+
+  const getSelectionOrder = (duaId: string) => {
+    const index = selectedDuas.indexOf(duaId);
+    return index !== -1 ? index + 1 : null;
+  };
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>Create New Sequence</Text>
+      <TextInput
+        style={styles.input}
+        onChangeText={setSequenceName}
+        value={sequenceName}
+        placeholder="Enter sequence name"
+      />
+      <Text style={styles.subtitle}>Select Duas:</Text>
+      <FlatList
+        data={duas}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={[
+              styles.duaItem,
+              selectedDuas.includes(item.id) && styles.selectedDuaItem
+            ]}
+            onPress={() => toggleDuaSelection(item.id)}
+          >
+            <Text style={styles.duaTitle}>{item.title}</Text>
+            {getSelectionOrder(item.id) && (
+              <RNView style={styles.orderIndicator}>
+                <Text style={styles.orderText}>{getSelectionOrder(item.id)}</Text>
+              </RNView>
+            )}
+          </TouchableOpacity>
+        )}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.listContent}
+      />
+      <TouchableOpacity
+        style={[
+          styles.createButton,
+          (!sequenceName || selectedDuas.length === 0) && styles.disabledButton
+        ]}
+        onPress={handleCreateSequence}
+        disabled={!sequenceName || selectedDuas.length === 0}
+      >
+        <Text style={styles.createButtonText}>Create Sequence</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 20,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+  subtitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  input: {
+    width: '100%',
+    height: 40,
+    borderColor: 'gray',
+    borderWidth: 1,
+    marginBottom: 20,
+    paddingHorizontal: 10,
+  },
+  listContent: {
+    paddingBottom: 20,
+  },
+  duaItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  selectedDuaItem: {
+    backgroundColor: 'lightblue',
+  },
+  duaTitle: {
+    fontSize: 16,
+    flex: 1,
+  },
+  orderIndicator: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: '#007AFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  orderText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  createButton: {
+    backgroundColor: 'blue',
+    padding: 15,
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  disabledButton: {
+    backgroundColor: 'gray',
+  },
+  createButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+});
