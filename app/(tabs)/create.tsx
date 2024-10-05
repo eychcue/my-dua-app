@@ -1,36 +1,58 @@
 // File: app/(tabs)/create.tsx
 
 import React, { useState } from 'react';
-import { StyleSheet, TextInput, TouchableOpacity, ScrollView } from 'react-native';
+import { StyleSheet, TextInput, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { Text, View } from '@/components/Themed';
-import { Dua } from '@/types/dua';
-import { useDua } from '@/contexts/DuaContext';
+import { createDua, addDuaToUser } from '@/api';
+import DuaDetails from '@/components/DuaDetails';
 
 export default function CreateScreen() {
   const [description, setDescription] = useState('');
-  const [duaLength, setDuaLength] = useState<'short' | 'long'>('short');
-  const [generatedDua, setGeneratedDua] = useState<Dua | null>(null);
-  const { addDua } = useDua();
+  const [generatedDua, setGeneratedDua] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
-  const generateDua = () => {
-    // This is where you'd call your API to generate the dua
-    // For now, we'll use a dummy dua
-    const dummyDua: Dua = {
-      id: `dua${Math.floor(Math.random() * 1000)}`,
-      title: `Dua for ${description}`,
-      arabic: 'بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ',
-      transliteration: 'Bismillah ir-Rahman ir-Rahim',
-      translation: 'In the name of Allah, the Most Gracious, the Most Merciful',
-    };
-    setGeneratedDua(dummyDua);
+  const handleCreateDua = async () => {
+    if (!description.trim()) {
+      setError('Please enter a dua description');
+      return;
+    }
+    setIsLoading(true);
+    setError('');
+    setSuccessMessage('');
+    try {
+      console.log('Calling createDua with description:', description);
+      const backendDua = await createDua(description);
+      console.log('Received backendDua:', backendDua);
+      if (!backendDua || !backendDua._id) {
+        throw new Error('Invalid response from server');
+      }
+      setGeneratedDua(backendDua);
+    } catch (err) {
+      console.error('Error in handleCreateDua:', err);
+      setError(`Failed to generate dua: ${err.message}`);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleAddDua = () => {
-    if (generatedDua) {
-      addDua(generatedDua);
+  const handleAddDua = async () => {
+    if (!generatedDua) return;
+    setIsLoading(true);
+    setError('');
+    setSuccessMessage('');
+    try {
+      await addDuaToUser(generatedDua._id);
+      setSuccessMessage('Dua added successfully!');
+      // Optionally, you can clear the form or navigate to another screen here
       setDescription('');
-      setDuaLength('short');
       setGeneratedDua(null);
+    } catch (err) {
+      console.error('Error in handleAddDua:', err);
+      setError('Failed to add dua. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -43,31 +65,34 @@ export default function CreateScreen() {
         value={description}
         placeholder="Enter dua description"
       />
-      <View style={styles.radioContainer}>
-        <TouchableOpacity
-          style={[styles.radioButton, duaLength === 'short' && styles.radioButtonSelected]}
-          onPress={() => setDuaLength('short')}
-        >
-          <Text>Short</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.radioButton, duaLength === 'long' && styles.radioButtonSelected]}
-          onPress={() => setDuaLength('long')}
-        >
-          <Text>Long</Text>
-        </TouchableOpacity>
-      </View>
-      <TouchableOpacity style={styles.button} onPress={generateDua}>
-        <Text style={styles.buttonText}>Generate Dua</Text>
+      <TouchableOpacity
+        style={styles.button}
+        onPress={handleCreateDua}
+        disabled={isLoading}
+      >
+        {isLoading ? (
+          <ActivityIndicator color="white" />
+        ) : (
+          <Text style={styles.buttonText}>Generate Dua</Text>
+        )}
       </TouchableOpacity>
+
+      {error ? <Text style={styles.errorText}>{error}</Text> : null}
+      {successMessage ? <Text style={styles.successText}>{successMessage}</Text> : null}
+
       {generatedDua && (
-        <View style={styles.generatedDua}>
-          <Text style={styles.duaTitle}>{generatedDua.title}</Text>
-          <Text style={styles.duaArabic}>{generatedDua.arabic}</Text>
-          <Text style={styles.duaTransliteration}>{generatedDua.transliteration}</Text>
-          <Text style={styles.duaTranslation}>{generatedDua.translation}</Text>
-          <TouchableOpacity style={styles.button} onPress={handleAddDua}>
-            <Text style={styles.buttonText}>Add Dua</Text>
+        <View style={styles.generatedDuaContainer}>
+          <DuaDetails dua={generatedDua} />
+          <TouchableOpacity
+            style={styles.button}
+            onPress={handleAddDua}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text style={styles.buttonText}>Add Dua</Text>
+            )}
           </TouchableOpacity>
         </View>
       )}
@@ -77,7 +102,7 @@ export default function CreateScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
@@ -95,50 +120,29 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     paddingHorizontal: 10,
   },
-  radioContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    width: '100%',
-    marginBottom: 20,
-  },
-  radioButton: {
-    padding: 10,
-    borderWidth: 1,
-    borderColor: 'gray',
-  },
-  radioButtonSelected: {
-    backgroundColor: 'lightblue',
-  },
   button: {
     backgroundColor: 'blue',
     padding: 10,
     borderRadius: 5,
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 10,
   },
   buttonText: {
     color: 'white',
     fontSize: 16,
-  },
-  generatedDua: {
-    marginTop: 20,
-    alignItems: 'center',
-  },
-  duaTitle: {
-    fontSize: 18,
     fontWeight: 'bold',
+  },
+  errorText: {
+    color: 'red',
     marginBottom: 10,
   },
-  duaArabic: {
-    fontSize: 24,
-    marginBottom: 10,
-    textAlign: 'right',
-  },
-  duaTransliteration: {
-    fontSize: 16,
-    fontStyle: 'italic',
+  successText: {
+    color: 'green',
     marginBottom: 10,
   },
-  duaTranslation: {
-    fontSize: 16,
-    marginBottom: 20,
+  generatedDuaContainer: {
+    marginTop: 20,
+    width: '100%',
   },
 });
