@@ -12,7 +12,7 @@ export default function DuaScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { duas } = useDua();
 
-  const dua = duas.find(d => d.id === id);
+  const dua = duas.find(d => d._id === id);
 
   if (!dua) {
     return null; // or you could return a "Dua not found" message

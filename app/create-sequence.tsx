@@ -5,6 +5,7 @@ import { StyleSheet, TextInput, TouchableOpacity, FlatList, View as RNView } fro
 import { Text, View } from '@/components/Themed';
 import { useDua } from '@/contexts/DuaContext';
 import { useRouter } from 'expo-router';
+import { Dua } from '@/types/dua';  // Ensure this path is correct
 
 export default function CreateSequenceScreen() {
   const [sequenceName, setSequenceName] = useState('');
@@ -12,14 +13,12 @@ export default function CreateSequenceScreen() {
   const { duas, addSequence } = useDua();
   const router = useRouter();
 
-  const handleCreateSequence = () => {
+  const handleCreateSequence = async () => {
     if (sequenceName && selectedDuas.length > 0) {
-      const newSequence = {
-        id: `seq${Date.now()}`,
+      await addSequence({
         name: sequenceName,
         duaIds: selectedDuas,
-      };
-      addSequence(newSequence);
+      });
       router.back();
     }
   };
@@ -51,23 +50,23 @@ export default function CreateSequenceScreen() {
       <Text style={styles.subtitle}>Select Duas:</Text>
       <FlatList
         data={duas}
-        renderItem={({ item }) => (
+        renderItem={({ item }: { item: Dua }) => (
           <TouchableOpacity
             style={[
               styles.duaItem,
-              selectedDuas.includes(item.id) && styles.selectedDuaItem
+              selectedDuas.includes(item._id) && styles.selectedDuaItem
             ]}
-            onPress={() => toggleDuaSelection(item.id)}
+            onPress={() => toggleDuaSelection(item._id)}
           >
             <Text style={styles.duaTitle}>{item.title}</Text>
-            {getSelectionOrder(item.id) && (
+            {getSelectionOrder(item._id) && (
               <RNView style={styles.orderIndicator}>
-                <Text style={styles.orderText}>{getSelectionOrder(item.id)}</Text>
+                <Text style={styles.orderText}>{getSelectionOrder(item._id)}</Text>
               </RNView>
             )}
           </TouchableOpacity>
         )}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item._id}
         contentContainerStyle={styles.listContent}
       />
       <TouchableOpacity

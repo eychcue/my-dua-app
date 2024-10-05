@@ -203,4 +203,36 @@ export const getDuaReadCount = async (duaId) => {
   }
 };
 
+// New function to create a sequence
+export const createSequence = async (sequence) => {
+  try {
+    const deviceId = await SecureStore.getItemAsync('deviceId');
+    if (!deviceId) {
+      throw new Error('Device ID not found');
+    }
+    const response = await api.post(`/users/${deviceId}/sequences`, sequence);
+    console.log('Sequence created:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating sequence:', error);
+    throw error;
+  }
+};
+
+// New function to get user sequences
+export const getUserSequences = async () => {
+  try {
+    const deviceId = await SecureStore.getItemAsync('deviceId');
+    if (!deviceId) {
+      throw new Error('Device ID not found');
+    }
+    const response = await api.get(`/users/${deviceId}/sequences`);
+    console.log('Fetched user sequences:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching user sequences:', error);
+    throw error;
+  }
+};
+
 export default api;

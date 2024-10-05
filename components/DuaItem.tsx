@@ -18,7 +18,6 @@ export default function DuaItem({ dua }: Props) {
       router.push(`/dua/${dua._id}`);
     } else {
       console.warn('Dua _id is missing');
-      // Handle the case where _id is missing, maybe show an alert or take alternative action
     }
   };
 

@@ -1,29 +1,33 @@
 // File: contexts/DuaContext.tsx
 
+// contexts/DuaContext.tsx
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
-import { getUserDuas, addDuaToUser } from '@/api';
-import { Dua } from '@/types/dua';
+import { getUserDuas, addDuaToUser, createSequence, getUserSequences } from '../api';
+import { Dua, Sequence } from '../types/dua';  // Ensure this path is correct
 
 interface DuaContextType {
   duas: Dua[];
+  sequences: Sequence[];
   fetchDuas: () => Promise<void>;
   addDua: (dua: Dua) => Promise<void>;
+  addSequence: (sequence: { name: string; duaIds: string[] }) => Promise<void>;
+  fetchSequences: () => Promise<void>;
 }
 
 const DuaContext = createContext<DuaContextType | undefined>(undefined);
 
 export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [duas, setDuas] = useState<Dua[]>([]);
+  const [sequences, setSequences] = useState<Sequence[]>([]);
+
+  useEffect(() => {
+    fetchDuas();
+    fetchSequences();
+  }, []);
 
   const fetchDuas = async () => {
     try {
       const fetchedDuas = await getUserDuas();
-      // Log any duas missing an _id
-      fetchedDuas.forEach((dua, index) => {
-        if (!dua._id) {
-          console.warn(`Dua at index ${index} is missing an _id:`, dua);
-        }
-      });
       setDuas(fetchedDuas);
     } catch (error) {
       console.error('Failed to fetch duas', error);
@@ -39,12 +43,26 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  useEffect(() => {
-    fetchDuas();
-  }, []);
+  const addSequence = async (sequence: { name: string; duaIds: string[] }) => {
+    try {
+      const newSequence = await createSequence(sequence);
+      setSequences(prevSequences => [...prevSequences, newSequence]);
+    } catch (error) {
+      console.error('Failed to create sequence', error);
+    }
+  };
+
+  const fetchSequences = async () => {
+    try {
+      const fetchedSequences = await getUserSequences();
+      setSequences(fetchedSequences);
+    } catch (error) {
+      console.error('Failed to fetch sequences', error);
+    }
+  };
 
   return (
-    <DuaContext.Provider value={{ duas, fetchDuas, addDua }}>
+    <DuaContext.Provider value={{ duas, sequences, fetchDuas, addDua, addSequence, fetchSequences }}>
       {children}
     </DuaContext.Provider>
   );

@@ -1,6 +1,6 @@
 // File: app/sequence/[id].tsx
 
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useRef, useState, useCallback, useEffect } from 'react';
 import { StyleSheet, Dimensions, FlatList, View as RNView, TouchableOpacity } from 'react-native';
 import { Text, View } from '@/components/Themed';
 import { useDua } from '@/contexts/DuaContext';
@@ -18,7 +18,16 @@ export default function SequenceViewerScreen() {
   const router = useRouter();
 
   const sequence = sequences.find(seq => seq.id === id);
-  const sequenceDuas = sequence ? sequence.duaIds.map(duaId => duas.find(dua => dua.id === duaId)!).filter(Boolean) : [];
+  const [sequenceDuas, setSequenceDuas] = useState<Dua[]>([]);
+
+  useEffect(() => {
+    if (sequence && duas.length > 0) {
+      const filteredDuas = sequence.duaIds
+        .map(duaId => duas.find(dua => dua._id === duaId))
+        .filter((dua): dua is Dua => dua !== undefined);
+      setSequenceDuas(filteredDuas);
+    }
+  }, [sequence, duas]);
 
   const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
     if (viewableItems.length > 0) {
@@ -40,6 +49,10 @@ export default function SequenceViewerScreen() {
     return <Text>Sequence not found</Text>;
   }
 
+  if (sequenceDuas.length === 0) {
+    return <Text>No duas found in this sequence</Text>;
+  }
+
   return (
     <RNView style={styles.container}>
       <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
@@ -53,7 +66,7 @@ export default function SequenceViewerScreen() {
             <DuaDetails dua={item} onRead={handleDuaRead} />
           </RNView>
         )}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item._id}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
