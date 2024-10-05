@@ -1,11 +1,12 @@
 // File: app/sequence/[id].tsx
 
-import React, { useRef, useState } from 'react';
-import { StyleSheet, Dimensions, FlatList, View as RNView } from 'react-native';
+import React, { useRef, useState, useCallback } from 'react';
+import { StyleSheet, Dimensions, FlatList, View as RNView, TouchableOpacity } from 'react-native';
 import { Text, View } from '@/components/Themed';
 import { useDua } from '@/contexts/DuaContext';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import DuaDetails from '@/components/DuaDetails';
+import { Ionicons } from '@expo/vector-icons';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -14,6 +15,7 @@ export default function SequenceViewerScreen() {
   const { duas, sequences } = useDua();
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
+  const router = useRouter();
 
   const sequence = sequences.find(seq => seq.id === id);
   const sequenceDuas = sequence ? sequence.duaIds.map(duaId => duas.find(dua => dua.id === duaId)!).filter(Boolean) : [];
@@ -24,18 +26,31 @@ export default function SequenceViewerScreen() {
     }
   }).current;
 
+  const handleDuaRead = useCallback(() => {
+    if (currentIndex < sequenceDuas.length - 1) {
+      flatListRef.current?.scrollToIndex({ index: currentIndex + 1, animated: true });
+    }
+  }, [currentIndex, sequenceDuas.length]);
+
+  const handleClose = () => {
+    router.back();
+  };
+
   if (!sequence) {
     return <Text>Sequence not found</Text>;
   }
 
   return (
     <RNView style={styles.container}>
+      <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
+        <Ionicons name="close" size={24} color="black" />
+      </TouchableOpacity>
       <FlatList
         ref={flatListRef}
         data={sequenceDuas}
         renderItem={({ item }) => (
           <RNView style={styles.duaContainer}>
-            <DuaDetails dua={item} />
+            <DuaDetails dua={item} onRead={handleDuaRead} />
           </RNView>
         )}
         keyExtractor={(item) => item.id}
@@ -82,5 +97,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#333',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 40,
+    right: 20,
+    zIndex: 10,
+    padding: 10,
   },
 });

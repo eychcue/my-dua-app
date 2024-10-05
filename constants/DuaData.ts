@@ -1,3 +1,5 @@
+// File: constants/DuaData.ts
+
 import { DuaCategory } from '@/types/dua';
 
 export const duaCategories: DuaCategory[] = [

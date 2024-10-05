@@ -1,3 +1,5 @@
+// File: app/(tabs)/create.tsx
+
 import React, { useState } from 'react';
 import { StyleSheet, TextInput, TouchableOpacity, ScrollView } from 'react-native';
 import { Text, View } from '@/components/Themed';

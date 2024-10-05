@@ -1,3 +1,5 @@
+// File: types/dua.ts
+
 export interface Dua {
   id: string;
   title: string;

@@ -1,3 +1,5 @@
+// File: app/(tabs)/dua.tsx
+
 import React from 'react';
 import { StyleSheet, FlatList } from 'react-native';
 import { Text, View } from '@/components/Themed';

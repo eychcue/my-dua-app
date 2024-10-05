@@ -1,3 +1,5 @@
+// File: components/AnimatedDuaItem.tsx
+
 import React from 'react';
 import { StyleSheet, Dimensions } from 'react-native';
 import Animated, { useAnimatedStyle, interpolate, Extrapolate } from 'react-native-reanimated';
