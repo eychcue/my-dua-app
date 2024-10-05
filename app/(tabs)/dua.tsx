@@ -1,13 +1,30 @@
 // File: app/(tabs)/dua.tsx
 
-import React from 'react';
-import { StyleSheet, FlatList } from 'react-native';
+import React, { useEffect } from 'react';
+import { StyleSheet, FlatList, RefreshControl } from 'react-native';
 import { Text, View } from '@/components/Themed';
 import DuaItem from '@/components/DuaItem';
 import { useDua } from '@/contexts/DuaContext';
+import { Dua } from '@/types/dua';
 
 export default function DuaScreen() {
-  const { duas } = useDua();
+  const { duas, fetchDuas } = useDua();
+
+  useEffect(() => {
+    fetchDuas();
+  }, []);
+
+  const handleRefresh = () => {
+    fetchDuas();
+  };
+
+  const keyExtractor = (item: Dua, index: number) => {
+    if (item._id) {
+      return item._id;
+    }
+    // Fallback to using index if _id is not available
+    return index.toString();
+  };
 
   return (
     <View style={styles.container}>
@@ -15,8 +32,11 @@ export default function DuaScreen() {
       <FlatList
         data={duas}
         renderItem={({ item }) => <DuaItem dua={item} />}
-        keyExtractor={(item) => item.id}
+        keyExtractor={keyExtractor}
         contentContainerStyle={styles.listContent}
+        refreshControl={
+          <RefreshControl refreshing={false} onRefresh={handleRefresh} />
+        }
       />
     </View>
   );

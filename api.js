@@ -178,8 +178,12 @@ export const addDuaToUser = async (duaId) => {
 // GET /users/{device_id}/duas
 export const getUserDuas = async () => {
   try {
-    const userId = await getOrCreateUserId();
-    const response = await api.get(`/users/${userId}/duas`);
+    const deviceId = await SecureStore.getItemAsync('deviceId');
+    if (!deviceId) {
+      throw new Error('Device ID not found');
+    }
+    const response = await api.get(`/users/${deviceId}/duas`);
+    console.log('Fetched user duas:', response.data);
     return response.data;
   } catch (error) {
     console.error('Error fetching user duas:', error);

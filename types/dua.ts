@@ -1,7 +1,7 @@
 // File: types/dua.ts
 
 export interface Dua {
-  id: string;
+  _id: string;
   title: string;
   arabic: string;
   transliteration: string;

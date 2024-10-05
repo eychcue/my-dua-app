@@ -3,15 +3,18 @@
 import React, { useState } from 'react';
 import { StyleSheet, TextInput, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { Text, View } from '@/components/Themed';
-import { createDua, addDuaToUser } from '@/api';
+import { createDua } from '@/api';
 import DuaDetails from '@/components/DuaDetails';
+import { useDua } from '@/contexts/DuaContext';
+import { Dua } from '@/types/dua';
 
 export default function CreateScreen() {
   const [description, setDescription] = useState('');
-  const [generatedDua, setGeneratedDua] = useState(null);
+  const [generatedDua, setGeneratedDua] = useState<Dua | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const { addDua } = useDua();
 
   const handleCreateDua = async () => {
     if (!description.trim()) {
@@ -28,10 +31,18 @@ export default function CreateScreen() {
       if (!backendDua || !backendDua._id) {
         throw new Error('Invalid response from server');
       }
-      setGeneratedDua(backendDua);
+      const newDua: Dua = {
+        _id: backendDua._id,
+        title: backendDua.title,
+        arabic: backendDua.arabic,
+        transliteration: backendDua.transliteration,
+        translation: backendDua.translation,
+        description: backendDua.description,
+      };
+      setGeneratedDua(newDua);
     } catch (err) {
       console.error('Error in handleCreateDua:', err);
-      setError(`Failed to generate dua: ${err.message}`);
+      setError(`Failed to generate dua: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setIsLoading(false);
     }
@@ -43,9 +54,8 @@ export default function CreateScreen() {
     setError('');
     setSuccessMessage('');
     try {
-      await addDuaToUser(generatedDua._id);
+      await addDua(generatedDua);
       setSuccessMessage('Dua added successfully!');
-      // Optionally, you can clear the form or navigate to another screen here
       setDescription('');
       setGeneratedDua(null);
     } catch (err) {

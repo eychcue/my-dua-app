@@ -3,8 +3,8 @@
 import React from 'react';
 import { StyleSheet, TouchableOpacity } from 'react-native';
 import { Text, View } from '@/components/Themed';
-import { useRouter } from 'expo-router';
 import { Dua } from '@/types/dua';
+import { useRouter } from 'expo-router';
 
 type Props = {
   dua: Dua;
@@ -14,14 +14,19 @@ export default function DuaItem({ dua }: Props) {
   const router = useRouter();
 
   const handlePress = () => {
-    router.push(`/dua/${dua.id}`);
+    if (dua._id) {
+      router.push(`/dua/${dua._id}`);
+    } else {
+      console.warn('Dua _id is missing');
+      // Handle the case where _id is missing, maybe show an alert or take alternative action
+    }
   };
 
   return (
     <TouchableOpacity onPress={handlePress} style={styles.container}>
       <View style={styles.contentContainer}>
-        <Text style={styles.title}>{dua.title}</Text>
-        <Text style={styles.preview} numberOfLines={2}>{dua.translation}</Text>
+        <Text style={styles.title}>{dua.title || 'Untitled Dua'}</Text>
+        <Text style={styles.preview} numberOfLines={2}>{dua.translation || 'No translation available'}</Text>
       </View>
     </TouchableOpacity>
   );
