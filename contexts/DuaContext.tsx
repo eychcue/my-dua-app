@@ -1,7 +1,7 @@
 // File: contexts/DuaContext.tsx
 
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
-import { getUserDuas, addDuaToUser, createSequence, getUserSequences, deleteUserSequence } from '../api';
+import { getUserDuas, addDuaToUser, createSequence, getUserSequences, deleteUserSequence, updateUserSequence } from '../api';
 import { Dua, Sequence } from '../types/dua';
 
 interface DuaContextType {
@@ -13,6 +13,7 @@ interface DuaContextType {
   fetchSequences: () => Promise<void>;
   deleteSequence: (sequenceId: string) => Promise<void>;
   undoDeleteSequence: (sequence: Sequence) => Promise<void>;
+  updateSequence: (sequence: Sequence) => Promise<void>;
 }
 
 const DuaContext = createContext<DuaContextType | undefined>(undefined);
@@ -80,6 +81,17 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
+  const updateSequence = async (sequence: Sequence) => {
+    try {
+      await updateUserSequence(sequence);
+      setSequences(prevSequences =>
+        prevSequences.map(seq => seq.id === sequence.id ? sequence : seq)
+      );
+    } catch (error) {
+      console.error('Failed to update sequence', error);
+    }
+  };
+
   return (
     <DuaContext.Provider value={{
       duas,
@@ -89,7 +101,8 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       addSequence,
       fetchSequences,
       deleteSequence,  // Make sure this is included
-      undoDeleteSequence
+      undoDeleteSequence,
+      updateSequence,
     }}>
       {children}
     </DuaContext.Provider>

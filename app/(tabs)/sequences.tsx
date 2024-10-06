@@ -55,8 +55,18 @@ export default function SequencesScreen() {
     setToastMessage('');
   };
 
+  const handleEdit = (sequence) => {
+    router.push({
+      pathname: '/edit-sequence',
+      params: { sequenceId: sequence.id }
+    });
+  };
+
   const renderRightActions = (sequence) => (
-    <RNView style={styles.rightAction}>
+    <RNView style={styles.rightActions}>
+      <TouchableOpacity style={styles.editButton} onPress={() => handleEdit(sequence)}>
+        <Ionicons name="pencil-outline" size={24} color="white" />
+      </TouchableOpacity>
       <TouchableOpacity style={styles.deleteButton} onPress={() => handleDelete(sequence)}>
         <Ionicons name="trash-outline" size={24} color="white" />
       </TouchableOpacity>
@@ -156,11 +166,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 80,
   },
+  rightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    width: 160, // Increased width to accommodate both buttons
+  },
+  editButton: {
+    backgroundColor: 'blue',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 80,
+    height: '100%',
+  },
   deleteButton: {
     backgroundColor: 'red',
     justifyContent: 'center',
     alignItems: 'center',
-    width: '100%',
+    width: 80,
     height: '100%',
   },
   toastContainer: {
