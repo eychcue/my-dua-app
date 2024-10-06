@@ -7,6 +7,7 @@ import { SplashScreen, Stack } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { useColorScheme, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { RootSiblingParent } from 'react-native-root-siblings';
 import { DuaProvider } from '@/contexts/DuaContext';
 import { getOrCreateUserId } from '@/api';
 
@@ -69,11 +70,13 @@ function RootLayoutNav({ userId }: { userId: string }) {
   return (
     <DuaProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-          <Stack>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          </Stack>
-        </ThemeProvider>
+        <RootSiblingParent>
+          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+            <Stack>
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            </Stack>
+          </ThemeProvider>
+        </RootSiblingParent>
       </GestureHandlerRootView>
     </DuaProvider>
   );

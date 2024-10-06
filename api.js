@@ -235,4 +235,19 @@ export const getUserSequences = async () => {
   }
 };
 
+export const deleteUserSequence = async (sequenceId) => {
+  try {
+    const deviceId = await SecureStore.getItemAsync('deviceId');
+    if (!deviceId) {
+      throw new Error('Device ID not found');
+    }
+    const response = await api.delete(`/users/${deviceId}/sequences/${sequenceId}`);
+    console.log('Sequence deleted:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting sequence:', error);
+    throw error;
+  }
+};
+
 export default api;

@@ -1,9 +1,8 @@
 // File: contexts/DuaContext.tsx
 
-// contexts/DuaContext.tsx
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
-import { getUserDuas, addDuaToUser, createSequence, getUserSequences } from '../api';
-import { Dua, Sequence } from '../types/dua';  // Ensure this path is correct
+import { getUserDuas, addDuaToUser, createSequence, getUserSequences, deleteUserSequence } from '../api';
+import { Dua, Sequence } from '../types/dua';
 
 interface DuaContextType {
   duas: Dua[];
@@ -12,6 +11,8 @@ interface DuaContextType {
   addDua: (dua: Dua) => Promise<void>;
   addSequence: (sequence: { name: string; duaIds: string[] }) => Promise<void>;
   fetchSequences: () => Promise<void>;
+  deleteSequence: (sequenceId: string) => Promise<void>;
+  undoDeleteSequence: (sequence: Sequence) => Promise<void>;
 }
 
 const DuaContext = createContext<DuaContextType | undefined>(undefined);
@@ -61,8 +62,35 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
+  const deleteSequence = async (sequenceId: string) => {
+    try {
+      await deleteUserSequence(sequenceId);
+      setSequences(prevSequences => prevSequences.filter(seq => seq.id !== sequenceId));
+    } catch (error) {
+      console.error('Failed to delete sequence', error);
+    }
+  };
+
+  const undoDeleteSequence = async (sequence: Sequence) => {
+    try {
+      const newSequence = await createSequence(sequence);
+      setSequences(prevSequences => [...prevSequences, newSequence]);
+    } catch (error) {
+      console.error('Failed to undo delete sequence', error);
+    }
+  };
+
   return (
-    <DuaContext.Provider value={{ duas, sequences, fetchDuas, addDua, addSequence, fetchSequences }}>
+    <DuaContext.Provider value={{
+      duas,
+      sequences,
+      fetchDuas,
+      addDua,
+      addSequence,
+      fetchSequences,
+      deleteSequence,  // Make sure this is included
+      undoDeleteSequence
+    }}>
       {children}
     </DuaContext.Provider>
   );
