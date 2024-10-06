@@ -1,19 +1,21 @@
 // File: contexts/DuaContext.tsx
 
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
-import { getUserDuas, addDuaToUser, createSequence, getUserSequences, deleteUserSequence, updateUserSequence } from '../api';
+import { getUserDuas, addDuaToUser, createSequence, getUserSequences, deleteUserSequence, updateUserSequence, getReadCounts, updateReadCount } from '../api';
 import { Dua, Sequence } from '../types/dua';
 
 interface DuaContextType {
   duas: Dua[];
   sequences: Sequence[];
+  readCounts: { [key: string]: number };
   fetchDuas: () => Promise<void>;
   addDua: (dua: Dua) => Promise<void>;
   addSequence: (sequence: { name: string; duaIds: string[] }) => Promise<void>;
   fetchSequences: () => Promise<void>;
   deleteSequence: (sequenceId: string) => Promise<void>;
-  undoDeleteSequence: (sequence: Sequence) => Promise<void>;
   updateSequence: (sequence: Sequence) => Promise<void>;
+  fetchReadCounts: () => Promise<void>;
+  incrementReadCount: (duaId: string) => Promise<void>;
 }
 
 const DuaContext = createContext<DuaContextType | undefined>(undefined);
@@ -21,10 +23,12 @@ const DuaContext = createContext<DuaContextType | undefined>(undefined);
 export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [duas, setDuas] = useState<Dua[]>([]);
   const [sequences, setSequences] = useState<Sequence[]>([]);
+  const [readCounts, setReadCounts] = useState<{ [key: string]: number }>({});
 
   useEffect(() => {
     fetchDuas();
     fetchSequences();
+    fetchReadCounts();
   }, []);
 
   const fetchDuas = async () => {
@@ -66,29 +70,41 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const deleteSequence = async (sequenceId: string) => {
     try {
       await deleteUserSequence(sequenceId);
-      setSequences(prevSequences => prevSequences.filter(seq => seq.id !== sequenceId));
+      setSequences(prevSequences => prevSequences.filter(seq => seq._id !== sequenceId));
     } catch (error) {
       console.error('Failed to delete sequence', error);
     }
   };
 
-  const undoDeleteSequence = async (sequence: Sequence) => {
-    try {
-      const newSequence = await createSequence(sequence);
-      setSequences(prevSequences => [...prevSequences, newSequence]);
-    } catch (error) {
-      console.error('Failed to undo delete sequence', error);
-    }
-  };
-
   const updateSequence = async (sequence: Sequence) => {
     try {
-      await updateUserSequence(sequence);
+      const updatedSequence = await updateUserSequence(sequence);
       setSequences(prevSequences =>
-        prevSequences.map(seq => seq.id === sequence.id ? sequence : seq)
+        prevSequences.map(seq => seq._id === updatedSequence._id ? updatedSequence : seq)
       );
     } catch (error) {
       console.error('Failed to update sequence', error);
+    }
+  };
+
+  const fetchReadCounts = async () => {
+    try {
+      const counts = await getReadCounts();
+      setReadCounts(counts);
+    } catch (error) {
+      console.error('Failed to fetch read counts', error);
+    }
+  };
+
+  const incrementReadCount = async (duaId: string) => {
+    try {
+      const updatedCount = await updateReadCount(duaId);
+      setReadCounts(prevCounts => ({
+        ...prevCounts,
+        [duaId]: updatedCount
+      }));
+    } catch (error) {
+      console.error('Failed to increment read count', error);
     }
   };
 
@@ -96,13 +112,15 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     <DuaContext.Provider value={{
       duas,
       sequences,
+      readCounts,
       fetchDuas,
       addDua,
       addSequence,
       fetchSequences,
-      deleteSequence,  // Make sure this is included
-      undoDeleteSequence,
+      deleteSequence,
       updateSequence,
+      fetchReadCounts,
+      incrementReadCount,
     }}>
       {children}
     </DuaContext.Provider>

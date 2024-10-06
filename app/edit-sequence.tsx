@@ -13,7 +13,7 @@ export default function EditSequenceScreen() {
   const { sequences, updateSequence, duas } = useDua();
   const router = useRouter();
 
-  const [sequence, setSequence] = useState(sequences.find(seq => seq.id === sequenceId));
+  const [sequence, setSequence] = useState(sequences.find(seq => seq._id === sequenceId));
   const [sequenceName, setSequenceName] = useState(sequence?.name || '');
   const [sequenceDuas, setSequenceDuas] = useState<Array<{ id: string; title: string; order: number }>>([]);
 

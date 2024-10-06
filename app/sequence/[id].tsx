@@ -17,7 +17,7 @@ export default function SequenceViewerScreen() {
   const flatListRef = useRef<FlatList>(null);
   const router = useRouter();
 
-  const sequence = sequences.find(seq => seq.id === id);
+  const sequence = sequences.find(seq => seq._id === id);
   const [sequenceDuas, setSequenceDuas] = useState<Dua[]>([]);
 
   useEffect(() => {

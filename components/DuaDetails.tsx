@@ -4,13 +4,19 @@ import React from 'react';
 import { StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Text, View } from '@/components/Themed';
 import { Dua } from '@/types/dua';
+import { useDua } from '@/contexts/DuaContext';
 
 type Props = {
   dua: Dua;
-  onRead?: () => void;
 };
 
-export default function DuaDetails({ dua, onRead }: Props) {
+export default function DuaDetails({ dua }: Props) {
+  const { incrementReadCount, readCounts } = useDua();
+
+  const handleRead = async () => {
+    await incrementReadCount(dua._id);
+  };
+
   return (
     <View style={styles.container}>
       <ScrollView
@@ -30,16 +36,14 @@ export default function DuaDetails({ dua, onRead }: Props) {
             <Text style={styles.description}>{dua.description}</Text>
           </>
         )}
-        {onRead && (
-          <TouchableOpacity style={styles.readButton} onPress={onRead}>
-            <Text style={styles.readButtonText}>Mark as Read</Text>
-          </TouchableOpacity>
-        )}
+        <Text style={styles.readCount}>Read {readCounts[dua._id] || 0} times</Text>
+        <TouchableOpacity style={styles.readButton} onPress={handleRead}>
+          <Text style={styles.readButtonText}>Mark as Read</Text>
+        </TouchableOpacity>
       </ScrollView>
     </View>
   );
 }
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,

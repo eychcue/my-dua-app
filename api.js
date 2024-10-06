@@ -3,9 +3,9 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
-import { BackendDua } from './types/dua';  // Adjust this import path as needed
+import { BackendDua, Sequence } from './types/dua';
 
-const BASE_URL = 'https://3a59-69-140-179-172.ngrok-free.app'; // Verify this URL
+const BASE_URL = 'https://9b0c-69-140-179-172.ngrok-free.app'; // Verify this URL
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -136,11 +136,14 @@ export const getUser = async (deviceId) => {
 };
 
 // PUT /users/{device_id}/read_count
-export const updateReadCount = async (duaId) => {
+export const updateReadCount = async (duaId: string): Promise<number> => {
   try {
-    const userId = await getOrCreateUserId();
-    const response = await api.put(`/users/${userId}/read_count`, { dua_id: duaId });
-    return response.data;
+    const deviceId = await SecureStore.getItemAsync('deviceId');
+    if (!deviceId) {
+      throw new Error('Device ID not found');
+    }
+    const response = await api.put(`/users/${deviceId}/read_count`, { dua_id: duaId });
+    return response.data.updated_read_count;
   } catch (error) {
     console.error('Error updating read count:', error);
     throw error;
@@ -148,10 +151,13 @@ export const updateReadCount = async (duaId) => {
 };
 
 // GET /users/{device_id}/read_counts
-export const getReadCounts = async () => {
+export const getReadCounts = async (): Promise<{ [key: string]: number }> => {
   try {
-    const userId = await getOrCreateUserId();
-    const response = await api.get(`/users/${userId}/read_counts`);
+    const deviceId = await SecureStore.getItemAsync('deviceId');
+    if (!deviceId) {
+      throw new Error('Device ID not found');
+    }
+    const response = await api.get(`/users/${deviceId}/read_counts`);
     return response.data;
   } catch (error) {
     console.error('Error fetching read counts:', error);
@@ -204,14 +210,13 @@ export const getDuaReadCount = async (duaId) => {
 };
 
 // New function to create a sequence
-export const createSequence = async (sequence) => {
+export const createSequence = async (sequence: { name: string; duaIds: string[] }): Promise<Sequence> => {
   try {
     const deviceId = await SecureStore.getItemAsync('deviceId');
     if (!deviceId) {
       throw new Error('Device ID not found');
     }
     const response = await api.post(`/users/${deviceId}/sequences`, sequence);
-    console.log('Sequence created:', response.data);
     return response.data;
   } catch (error) {
     console.error('Error creating sequence:', error);
@@ -220,14 +225,13 @@ export const createSequence = async (sequence) => {
 };
 
 // New function to get user sequences
-export const getUserSequences = async () => {
+export const getUserSequences = async (): Promise<Sequence[]> => {
   try {
     const deviceId = await SecureStore.getItemAsync('deviceId');
     if (!deviceId) {
       throw new Error('Device ID not found');
     }
     const response = await api.get(`/users/${deviceId}/sequences`);
-    console.log('Fetched user sequences:', response.data);
     return response.data;
   } catch (error) {
     console.error('Error fetching user sequences:', error);
@@ -235,29 +239,26 @@ export const getUserSequences = async () => {
   }
 };
 
-export const deleteUserSequence = async (sequenceId) => {
+export const deleteUserSequence = async (sequenceId: string): Promise<void> => {
   try {
     const deviceId = await SecureStore.getItemAsync('deviceId');
     if (!deviceId) {
       throw new Error('Device ID not found');
     }
-    const response = await api.delete(`/users/${deviceId}/sequences/${sequenceId}`);
-    console.log('Sequence deleted:', response.data);
-    return response.data;
+    await api.delete(`/users/${deviceId}/sequences/${sequenceId}`);
   } catch (error) {
     console.error('Error deleting sequence:', error);
     throw error;
   }
 };
 
-export const updateUserSequence = async (sequence) => {
+export const updateUserSequence = async (sequence: Sequence): Promise<Sequence> => {
   try {
     const deviceId = await SecureStore.getItemAsync('deviceId');
     if (!deviceId) {
       throw new Error('Device ID not found');
     }
-    const response = await api.put(`/users/${deviceId}/sequences/${sequence.id}`, sequence);
-    console.log('Sequence updated:', response.data);
+    const response = await api.put(`/users/${deviceId}/sequences/${sequence._id}`, sequence);
     return response.data;
   } catch (error) {
     console.error('Error updating sequence:', error);

@@ -31,15 +31,10 @@ export default function SequencesScreen() {
   };
 
   const handleDelete = (sequence) => {
-    // Immediately remove from local state
-    setLocalSequences(prevSequences => prevSequences.filter(seq => seq.id !== sequence.id));
-
-    // Show toast with undo option
+    setLocalSequences(prevSequences => prevSequences.filter(seq => seq._id !== sequence._id));
     setToastMessage('Sequence deleted. Tap to undo.');
-
-    // Set up deletion after 5 seconds
     deleteTimeoutRef.current = setTimeout(() => {
-      deleteSequence(sequence.id);
+      deleteSequence(sequence._id);
       setToastMessage('');
     }, 5000);
   };
@@ -49,8 +44,6 @@ export default function SequencesScreen() {
       clearTimeout(deleteTimeoutRef.current);
       deleteTimeoutRef.current = null;
     }
-
-    // Restore sequences from the backend
     fetchSequences();
     setToastMessage('');
   };
@@ -58,7 +51,7 @@ export default function SequencesScreen() {
   const handleEdit = (sequence) => {
     router.push({
       pathname: '/edit-sequence',
-      params: { sequenceId: sequence.id }
+      params: { sequenceId: sequence._id }
     });
   };
 
@@ -80,7 +73,7 @@ export default function SequencesScreen() {
     >
       <TouchableOpacity
         style={styles.sequenceItem}
-        onPress={() => handleSequencePress(item.id)}
+        onPress={() => handleSequencePress(item._id)}
       >
         <Text style={styles.sequenceName}>{item.name}</Text>
         <Text style={styles.sequenceCount}>{item.duaIds.length} duas</Text>
@@ -94,7 +87,7 @@ export default function SequencesScreen() {
       <FlatList
         data={localSequences}
         renderItem={renderSequenceItem}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item._id}
         contentContainerStyle={styles.listContent}
       />
       <TouchableOpacity

@@ -9,10 +9,11 @@ export interface Dua {
   description?: string;
 }
 
-export interface DuaCategory {
-  id: string;
+export interface Sequence {
+  _id: string;
+  device_id: string;
   name: string;
-  duas: Dua[];
+  duaIds: string[];
 }
 
 export interface BackendDua {
@@ -26,7 +27,7 @@ export interface BackendDua {
 
 export function convertBackendDua(backendDua: BackendDua): Dua {
   return {
-    id: backendDua._id,
+    _id: backendDua._id,
     title: backendDua.title,
     arabic: backendDua.arabic,
     transliteration: backendDua.transliteration,
