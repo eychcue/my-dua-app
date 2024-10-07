@@ -150,6 +150,19 @@ export const updateReadCount = async (duaId: string): Promise<number> => {
   }
 };
 
+export const removeDuaFromUser = async (duaId: string): Promise<void> => {
+  try {
+    const deviceId = await SecureStore.getItemAsync('deviceId');
+    if (!deviceId) {
+      throw new Error('Device ID not found');
+    }
+    await api.delete(`/users/${deviceId}/duas/${duaId}`);
+  } catch (error) {
+    console.error('Error removing dua from user:', error);
+    throw error;
+  }
+};
+
 // POST /users/{device_id}/duas/{dua_id}
 export const addDuaToUser = async (duaId) => {
   try {

@@ -1,7 +1,18 @@
 // File: contexts/DuaContext.tsx
 
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
-import { getUserDuas, addDuaToUser, createSequence, getUserSequences, deleteUserSequence, updateUserSequence, markDuaAsRead, batchMarkDuasAsRead, getReadCounts } from '../api';
+import {
+  getUserDuas,
+  addDuaToUser,
+  createSequence,
+  getUserSequences,
+  deleteUserSequence,
+  updateUserSequence,
+  markDuaAsRead,
+  batchMarkDuasAsRead,
+  getReadCounts,
+  removeDuaFromUser
+} from '../api';
 import { Dua, Sequence } from '../types/dua';
 
 interface DuaContextType {
@@ -17,6 +28,8 @@ interface DuaContextType {
   markAsRead: (duaId: string) => Promise<void>;
   batchMarkAsRead: (duaIds: string[]) => Promise<void>;
   fetchReadCounts: () => Promise<void>;
+  removeDua: (duaId: string) => Promise<void>; // Add this
+  undoRemoveDua: (dua: Dua) => Promise<void>; // Add this
 }
 
 const DuaContext = createContext<DuaContextType | undefined>(undefined);
@@ -127,6 +140,34 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
+  const removeDua = async (duaId: string) => {
+    try {
+      await removeDuaFromUser(duaId);
+      setDuas(prevDuas => prevDuas.filter(dua => dua._id !== duaId));
+    } catch (error) {
+      console.error('Failed to remove dua', error);
+      // If the API call fails, we should add the dua back to the local state
+      const removedDua = duas.find(dua => dua._id === duaId);
+      if (removedDua) {
+        setDuas(prevDuas => [...prevDuas, removedDua]);
+      }
+    }
+  };
+
+  const undoRemoveDua = async (dua: Dua) => {
+    try {
+      await addDuaToUser(dua._id);
+      setDuas(prevDuas => {
+        if (prevDuas.some(d => d._id === dua._id)) {
+          return prevDuas; // Dua already exists, don't add it again
+        }
+        return [...prevDuas, dua];
+      });
+    } catch (error) {
+      console.error('Failed to undo remove dua', error);
+    }
+  };
+
   return (
     <DuaContext.Provider value={{
       duas,
@@ -141,6 +182,8 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       markAsRead,
       batchMarkAsRead,
       fetchReadCounts,
+      removeDua,
+      undoRemoveDua,
     }}>
       {children}
     </DuaContext.Provider>
