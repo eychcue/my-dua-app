@@ -1,9 +1,9 @@
-// File: api.js
+Collection// File: api.js
 
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
-import { BackendDua, Sequence } from './types/dua';
+import { BackendDua, Collection } from './types/dua';
 
 const BASE_URL = 'https://9b0c-69-140-179-172.ngrok-free.app'; // Verify this URL
 
@@ -207,59 +207,59 @@ export const getDuaReadCount = async (duaId) => {
   }
 };
 
-// New function to create a sequence
-export const createSequence = async (sequence: { name: string; duaIds: string[] }): Promise<Sequence> => {
+// New function to create a collection
+export const createCollection = async (collection: { name: string; duaIds: string[] }): Promise<Collection> => {
   try {
     const deviceId = await SecureStore.getItemAsync('deviceId');
     if (!deviceId) {
       throw new Error('Device ID not found');
     }
-    const response = await api.post(`/users/${deviceId}/sequences`, sequence);
+    const response = await api.post(`/users/${deviceId}/collections`, collection);
     return response.data;
   } catch (error) {
-    console.error('Error creating sequence:', error);
+    console.error('Error creating collection:', error);
     throw error;
   }
 };
 
-// New function to get user sequences
-export const getUserSequences = async (): Promise<Sequence[]> => {
+// New function to get user collections
+export const getUserCollections = async (): Promise<Collection[]> => {
   try {
     const deviceId = await SecureStore.getItemAsync('deviceId');
     if (!deviceId) {
       throw new Error('Device ID not found');
     }
-    const response = await api.get(`/users/${deviceId}/sequences`);
+    const response = await api.get(`/users/${deviceId}/collections`);
     return response.data;
   } catch (error) {
-    console.error('Error fetching user sequences:', error);
+    console.error('Error fetching user collections:', error);
     throw error;
   }
 };
 
-export const deleteUserSequence = async (sequenceId: string): Promise<void> => {
+export const deleteUserCollection = async (collectionId: string): Promise<void> => {
   try {
     const deviceId = await SecureStore.getItemAsync('deviceId');
     if (!deviceId) {
       throw new Error('Device ID not found');
     }
-    await api.delete(`/users/${deviceId}/sequences/${sequenceId}`);
+    await api.delete(`/users/${deviceId}/collections/${collectionId}`);
   } catch (error) {
-    console.error('Error deleting sequence:', error);
+    console.error('Error deleting collection:', error);
     throw error;
   }
 };
 
-export const updateUserSequence = async (sequence: Sequence): Promise<Sequence> => {
+export const updateUserCollection = async (collection: Collection): Promise<Collection> => {
   try {
     const deviceId = await SecureStore.getItemAsync('deviceId');
     if (!deviceId) {
       throw new Error('Device ID not found');
     }
-    const response = await api.put(`/users/${deviceId}/sequences/${sequence._id}`, sequence);
+    const response = await api.put(`/users/${deviceId}/collections/${collection._id}`, collection);
     return response.data;
   } catch (error) {
-    console.error('Error updating sequence:', error);
+    console.error('Error updating collection:', error);
     throw error;
   }
 };

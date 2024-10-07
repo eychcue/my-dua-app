@@ -9,7 +9,7 @@ export interface Dua {
   description?: string;
 }
 
-export interface Sequence {
+export interface Collection {
   _id: string;
   device_id: string;
   name: string;

@@ -4,27 +4,27 @@ import React, { createContext, useState, useContext, ReactNode, useEffect } from
 import {
   getUserDuas,
   addDuaToUser,
-  createSequence,
-  getUserSequences,
-  deleteUserSequence,
-  updateUserSequence,
+  createCollection,
+  getUserCollections,
+  deleteUserCollection,
+  updateUserCollection,
   markDuaAsRead,
   batchMarkDuasAsRead,
   getReadCounts,
   removeDuaFromUser
 } from '../api';
-import { Dua, Sequence } from '../types/dua';
+import { Dua, Collection } from '../types/dua';
 
 interface DuaContextType {
   duas: Dua[];
-  sequences: Sequence[];
+  collections: Collection[];
   readCounts: { [key: string]: number };
   fetchDuas: () => Promise<void>;
   addDua: (dua: Dua) => Promise<void>;
-  addSequence: (sequence: { name: string; duaIds: string[] }) => Promise<void>;
-  fetchSequences: () => Promise<void>;
-  deleteSequence: (sequenceId: string) => Promise<void>;
-  updateSequence: (sequence: Sequence) => Promise<void>;
+  addCollection: (collection: { name: string; duaIds: string[] }) => Promise<void>;
+  fetchCollections: () => Promise<void>;
+  deleteCollection: (collectionId: string) => Promise<void>;
+  updateCollection: (collection: Collection) => Promise<void>;
   markAsRead: (duaId: string) => Promise<void>;
   batchMarkAsRead: (duaIds: string[]) => Promise<void>;
   fetchReadCounts: () => Promise<void>;
@@ -36,12 +36,12 @@ const DuaContext = createContext<DuaContextType | undefined>(undefined);
 
 export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [duas, setDuas] = useState<Dua[]>([]);
-  const [sequences, setSequences] = useState<Sequence[]>([]);
+  const [collections, setCollections] = useState<Collection[]>([]);
   const [readCounts, setReadCounts] = useState<{ [key: string]: number }>({});
 
   useEffect(() => {
     fetchDuas();
-    fetchSequences();
+    fetchCollections();
     fetchReadCounts();
   }, []);
 
@@ -63,41 +63,41 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  const addSequence = async (sequence: { name: string; duaIds: string[] }) => {
+  const addCollection = async (collection: { name: string; duaIds: string[] }) => {
     try {
-      const newSequence = await createSequence(sequence);
-      setSequences(prevSequences => [...prevSequences, newSequence]);
+      const newCollection = await createCollection(collection);
+      setCollections(prevCollections => [...prevCollections, newCollection]);
     } catch (error) {
-      console.error('Failed to create sequence', error);
+      console.error('Failed to create collection', error);
     }
   };
 
-  const fetchSequences = async () => {
+  const fetchCollections = async () => {
     try {
-      const fetchedSequences = await getUserSequences();
-      setSequences(fetchedSequences);
+      const fetchedCollections = await getUserCollections();
+      setCollections(fetchedCollections);
     } catch (error) {
-      console.error('Failed to fetch sequences', error);
+      console.error('Failed to fetch collections', error);
     }
   };
 
-  const deleteSequence = async (sequenceId: string) => {
+  const deleteCollection = async (collectionId: string) => {
     try {
-      await deleteUserSequence(sequenceId);
-      setSequences(prevSequences => prevSequences.filter(seq => seq._id !== sequenceId));
+      await deleteUserCollection(collectionId);
+      setCollections(prevCollections => prevCollections.filter(seq => seq._id !== collectionId));
     } catch (error) {
-      console.error('Failed to delete sequence', error);
+      console.error('Failed to delete collection', error);
     }
   };
 
-  const updateSequence = async (sequence: Sequence) => {
+  const updateCollection = async (collection: Collection) => {
     try {
-      const updatedSequence = await updateUserSequence(sequence);
-      setSequences(prevSequences =>
-        prevSequences.map(seq => seq._id === updatedSequence._id ? updatedSequence : seq)
+      const updatedCollection = await updateUserCollection(collection);
+      setCollections(prevCollections =>
+        prevCollections.map(seq => seq._id === updatedCollection._id ? updatedCollection : seq)
       );
     } catch (error) {
-      console.error('Failed to update sequence', error);
+      console.error('Failed to update collection', error);
     }
   };
 
@@ -171,14 +171,14 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   return (
     <DuaContext.Provider value={{
       duas,
-      sequences,
+      collections,
       readCounts,
       fetchDuas,
       addDua,
-      addSequence,
-      fetchSequences,
-      deleteSequence,
-      updateSequence,
+      addCollection,
+      fetchCollections,
+      deleteCollection,
+      updateCollection,
       markAsRead,
       batchMarkAsRead,
       fetchReadCounts,
