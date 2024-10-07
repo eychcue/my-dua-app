@@ -12,7 +12,7 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function SequenceViewerScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { duas, sequences } = useDua();
+  const { duas, sequences, batchMarkAsRead } = useDua();
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
   const router = useRouter();
@@ -42,6 +42,13 @@ export default function SequenceViewerScreen() {
   }, [currentIndex, sequenceDuas.length]);
 
   const handleClose = () => {
+    // Batch mark all viewed duas as read when closing the sequence
+    const viewedDuaIds = sequenceDuas.slice(0, currentIndex + 1).map(dua => dua._id);
+    if (viewedDuaIds.length > 0) {
+      batchMarkAsRead(viewedDuaIds).catch(error => {
+        console.error('Failed to batch mark duas as read:', error);
+      });
+    }
     router.back();
   };
 

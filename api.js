@@ -150,21 +150,6 @@ export const updateReadCount = async (duaId: string): Promise<number> => {
   }
 };
 
-// GET /users/{device_id}/read_counts
-export const getReadCounts = async (): Promise<{ [key: string]: number }> => {
-  try {
-    const deviceId = await SecureStore.getItemAsync('deviceId');
-    if (!deviceId) {
-      throw new Error('Device ID not found');
-    }
-    const response = await api.get(`/users/${deviceId}/read_counts`);
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching read counts:', error);
-    throw error;
-  }
-};
-
 // POST /users/{device_id}/duas/{dua_id}
 export const addDuaToUser = async (duaId) => {
   try {
@@ -265,5 +250,48 @@ export const updateUserSequence = async (sequence: Sequence): Promise<Sequence> 
     throw error;
   }
 };
+
+export const markDuaAsRead = async (duaId: string): Promise<number> => {
+  try {
+    const deviceId = await SecureStore.getItemAsync('deviceId');
+    if (!deviceId) {
+      throw new Error('Device ID not found');
+    }
+    const response = await api.put(`/users/${deviceId}/duas/${duaId}/read`);
+    return response.data.read_count;
+  } catch (error) {
+    console.error('Error marking dua as read:', error);
+    throw error;
+  }
+};
+
+export const batchMarkDuasAsRead = async (duaIds: string[]): Promise<{ [key: string]: number }> => {
+  try {
+    const deviceId = await SecureStore.getItemAsync('deviceId');
+    if (!deviceId) {
+      throw new Error('Device ID not found');
+    }
+    const response = await api.put(`/users/${deviceId}/duas/batch_read`, { dua_ids: duaIds });
+    return response.data.updated_counts;
+  } catch (error) {
+    console.error('Error batch marking duas as read:', error);
+    throw error;
+  }
+};
+
+export const getReadCounts = async (): Promise<{ [key: string]: number }> => {
+  try {
+    const deviceId = await SecureStore.getItemAsync('deviceId');
+    if (!deviceId) {
+      throw new Error('Device ID not found');
+    }
+    const response = await api.get(`/users/${deviceId}/read_counts`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching read counts:', error);
+    throw error;
+  }
+};
+
 
 export default api;

@@ -8,13 +8,17 @@ import { useDua } from '@/contexts/DuaContext';
 
 type Props = {
   dua: Dua;
+  onRead?: () => void;
 };
 
-export default function DuaDetails({ dua }: Props) {
-  const { incrementReadCount, readCounts } = useDua();
+export default function DuaDetails({ dua, onRead }: Props) {
+  const { markAsRead, readCounts } = useDua();
 
-  const handleRead = async () => {
-    await incrementReadCount(dua._id);
+  const handleMarkAsRead = async () => {
+    await markAsRead(dua._id);
+    if (onRead) {
+      onRead();
+    }
   };
 
   return (
@@ -24,6 +28,7 @@ export default function DuaDetails({ dua }: Props) {
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.title}>{dua.title}</Text>
+        <Text style={styles.readCount}>Read {readCounts[dua._id] || 0} times</Text>
         <View style={styles.separator} />
         <Text style={styles.arabic}>{dua.arabic}</Text>
         <View style={styles.separator} />
@@ -36,14 +41,14 @@ export default function DuaDetails({ dua }: Props) {
             <Text style={styles.description}>{dua.description}</Text>
           </>
         )}
-        <Text style={styles.readCount}>Read {readCounts[dua._id] || 0} times</Text>
-        <TouchableOpacity style={styles.readButton} onPress={handleRead}>
+        <TouchableOpacity style={styles.readButton} onPress={handleMarkAsRead}>
           <Text style={styles.readButtonText}>Mark as Read</Text>
         </TouchableOpacity>
       </ScrollView>
     </View>
   );
 }
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,

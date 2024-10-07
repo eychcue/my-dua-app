@@ -1,7 +1,7 @@
 // File: contexts/DuaContext.tsx
 
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
-import { getUserDuas, addDuaToUser, createSequence, getUserSequences, deleteUserSequence, updateUserSequence, getReadCounts, updateReadCount } from '../api';
+import { getUserDuas, addDuaToUser, createSequence, getUserSequences, deleteUserSequence, updateUserSequence, markDuaAsRead, batchMarkDuasAsRead, getReadCounts } from '../api';
 import { Dua, Sequence } from '../types/dua';
 
 interface DuaContextType {
@@ -14,8 +14,9 @@ interface DuaContextType {
   fetchSequences: () => Promise<void>;
   deleteSequence: (sequenceId: string) => Promise<void>;
   updateSequence: (sequence: Sequence) => Promise<void>;
+  markAsRead: (duaId: string) => Promise<void>;
+  batchMarkAsRead: (duaIds: string[]) => Promise<void>;
   fetchReadCounts: () => Promise<void>;
-  incrementReadCount: (duaId: string) => Promise<void>;
 }
 
 const DuaContext = createContext<DuaContextType | undefined>(undefined);
@@ -87,6 +88,24 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
+  const markAsRead = async (duaId: string) => {
+    try {
+      const updatedCount = await markDuaAsRead(duaId);
+      setReadCounts(prev => ({ ...prev, [duaId]: updatedCount }));
+    } catch (error) {
+      console.error('Failed to mark dua as read', error);
+    }
+  };
+
+  const batchMarkAsRead = async (duaIds: string[]) => {
+    try {
+      const updatedCounts = await batchMarkDuasAsRead(duaIds);
+      setReadCounts(prev => ({ ...prev, ...updatedCounts }));
+    } catch (error) {
+      console.error('Failed to batch mark duas as read', error);
+    }
+  };
+
   const fetchReadCounts = async () => {
     try {
       const counts = await getReadCounts();
@@ -119,8 +138,9 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       fetchSequences,
       deleteSequence,
       updateSequence,
+      markAsRead,
+      batchMarkAsRead,
       fetchReadCounts,
-      incrementReadCount,
     }}>
       {children}
     </DuaContext.Provider>
