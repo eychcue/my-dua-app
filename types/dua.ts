@@ -14,6 +14,8 @@ export interface Collection {
   device_id: string;
   name: string;
   duaIds: string[];
+  scheduled_time: string | null;
+  notification_enabled: boolean;
 }
 
 export interface BackendDua {

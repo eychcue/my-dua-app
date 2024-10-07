@@ -3,9 +3,11 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { SplashScreen, Stack } from 'expo-router';
+import { useRouter, SplashScreen, Stack } from 'expo-router';
+import * as Notifications from 'expo-notifications';
+import { setupNotifications } from '../utils/notificationHandler';
 import { useEffect, useState } from 'react';
-import { useColorScheme } from 'react-native';
+import { useColorScheme, View, Text } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { RootSiblingParent } from 'react-native-root-siblings';
 import { DuaProvider } from '@/contexts/DuaContext';
@@ -26,6 +28,7 @@ export default function RootLayout() {
   });
   const [userId, setUserId] = useState<string | null>(null);
   const [initError, setInitError] = useState<Error | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     if (error) throw error;
@@ -38,6 +41,20 @@ export default function RootLayout() {
           const id = await getOrCreateUserId();
           setUserId(id);
           await SplashScreen.hideAsync();
+
+          // Set up notifications
+          setupNotifications();
+
+          // Add notification response listener
+          const subscription = Notifications.addNotificationResponseReceivedListener(response => {
+            const collectionId = response.notification.request.content.data?.collectionId;
+            if (collectionId) {
+              // Use the router to navigate to the specific collection
+              router.push(`/collection/${collectionId}`);
+            }
+          });
+
+          return () => subscription.remove();
         }
       } catch (e) {
         console.error('Failed to initialize app:', e);
@@ -45,9 +62,8 @@ export default function RootLayout() {
         await SplashScreen.hideAsync();
       }
     }
-
     initializeApp();
-  }, [loaded]);
+  }, [loaded, router]);
 
   if (!loaded || (!userId && !initError)) {
     return null;
@@ -72,9 +88,16 @@ function RootLayoutNav({ userId }: { userId: string }) {
       <GestureHandlerRootView style={{ flex: 1 }}>
         <RootSiblingParent>
           <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-            <Stack initialRouteName="(tabs)">
+            <Stack>
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
               <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+              <Stack.Screen
+                name="collection/[id]"
+                options={{
+                  presentation: 'modal',
+                  headerShown: false, // Hide the header for this screen
+                }}
+              />
             </Stack>
           </ThemeProvider>
         </RootSiblingParent>

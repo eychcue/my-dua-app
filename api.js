@@ -1,4 +1,4 @@
-Collection// File: api.js
+// File: api.js
 
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
@@ -208,7 +208,12 @@ export const getDuaReadCount = async (duaId) => {
 };
 
 // New function to create a collection
-export const createCollection = async (collection: { name: string; duaIds: string[] }): Promise<Collection> => {
+export const createCollection = async (collection: {
+  name: string;
+  duaIds: string[];
+  scheduled_time: string | null;
+  notification_enabled: boolean
+}): Promise<Collection> => {
   try {
     const deviceId = await SecureStore.getItemAsync('deviceId');
     if (!deviceId) {

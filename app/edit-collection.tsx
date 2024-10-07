@@ -1,12 +1,14 @@
 // File: app/edit-collection.tsx
 
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, TextInput, TouchableOpacity, FlatList, View as RNView } from 'react-native';
+import { StyleSheet, TextInput, TouchableOpacity, View as RNView, Switch, FlatList } from 'react-native';
 import { Text, View } from '@/components/Themed';
 import { useDua } from '@/contexts/DuaContext';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import * as Notifications from 'expo-notifications';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function EditCollectionScreen() {
   const { collectionId } = useLocalSearchParams<{ collectionId: string }>();
@@ -17,6 +19,8 @@ export default function EditCollectionScreen() {
   const [collectionName, setCollectionName] = useState(collection?.name || '');
   const [collectionDuas, setCollectionDuas] = useState<Array<{ id: string; title: string; order: number }>>([]);
   const [availableDuas, setAvailableDuas] = useState<Array<{ id: string; title: string }>>([]);
+  const [scheduledTime, setScheduledTime] = useState(collection?.scheduled_time ? new Date(collection.scheduled_time) : new Date());
+  const [notificationEnabled, setNotificationEnabled] = useState(collection?.notification_enabled || false);
 
   useEffect(() => {
     if (collection && duas.length > 0) {
@@ -38,11 +42,50 @@ export default function EditCollectionScreen() {
       const updatedCollection = {
         ...collection,
         name: collectionName,
-        duaIds: collectionDuas.map(dua => dua.id)
+        duaIds: collectionDuas.map(dua => dua.id),
+        scheduled_time: notificationEnabled ? scheduledTime.toISOString() : null,
+        notification_enabled: notificationEnabled,
       };
       await updateCollection(updatedCollection);
+
+      if (notificationEnabled) {
+        await scheduleNotification(updatedCollection);
+      } else {
+        await Notifications.cancelScheduledNotificationAsync(collection._id);
+      }
+
       router.back();
     }
+  };
+
+  const scheduleNotification = async (collection) => {
+    const { status } = await Notifications.getPermissionsAsync();
+    if (status !== 'granted') {
+      const { status } = await Notifications.requestPermissionsAsync();
+      if (status !== 'granted') {
+        alert('You need to grant notification permissions to enable this feature.');
+        return;
+      }
+    }
+
+    await Notifications.cancelScheduledNotificationAsync(collection._id);
+
+    const trigger = new Date(collection.scheduled_time);
+    trigger.setDate(trigger.getDate() + 1);
+
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: "It's time for your Dua collection",
+        body: `Read your "${collection.name}" collection now`,
+        data: { collectionId: collection._id },
+      },
+      trigger: {
+        hour: trigger.getHours(),
+        minute: trigger.getMinutes(),
+        repeats: true,
+      },
+      identifier: collection._id,
+    });
   };
 
   const renderCollectionDuaItem = ({ item, drag, isActive }: RenderItemParams<{ id: string; title: string; order: number }>) => (
@@ -108,6 +151,22 @@ export default function EditCollectionScreen() {
         keyExtractor={(item) => item.id}
         style={styles.duaList}
       />
+      <View style={styles.notificationContainer}>
+        <Text>Enable daily notification</Text>
+        <Switch
+          value={notificationEnabled}
+          onValueChange={setNotificationEnabled}
+        />
+      </View>
+      {notificationEnabled && (
+        <DateTimePicker
+          value={scheduledTime}
+          mode="time"
+          is24Hour={true}
+          display="default"
+          onChange={(event, selectedTime) => setScheduledTime(selectedTime || scheduledTime)}
+        />
+      )}
       <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
         <Text style={styles.saveButtonText}>Save Changes</Text>
       </TouchableOpacity>
@@ -167,6 +226,12 @@ const styles = StyleSheet.create({
   },
   duaTitle: {
     flex: 1,
+  },
+  notificationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginVertical: 10,
   },
   saveButton: {
     backgroundColor: 'blue',

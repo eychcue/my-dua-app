@@ -11,7 +11,7 @@ import {
   markDuaAsRead,
   batchMarkDuasAsRead,
   getReadCounts,
-  removeDuaFromUser
+  removeDuaFromUser,
 } from '../api';
 import { Dua, Collection } from '../types/dua';
 
@@ -63,15 +63,6 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  const addCollection = async (collection: { name: string; duaIds: string[] }) => {
-    try {
-      const newCollection = await createCollection(collection);
-      setCollections(prevCollections => [...prevCollections, newCollection]);
-    } catch (error) {
-      console.error('Failed to create collection', error);
-    }
-  };
-
   const fetchCollections = async () => {
     try {
       const fetchedCollections = await getUserCollections();
@@ -87,17 +78,6 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setCollections(prevCollections => prevCollections.filter(seq => seq._id !== collectionId));
     } catch (error) {
       console.error('Failed to delete collection', error);
-    }
-  };
-
-  const updateCollection = async (collection: Collection) => {
-    try {
-      const updatedCollection = await updateUserCollection(collection);
-      setCollections(prevCollections =>
-        prevCollections.map(seq => seq._id === updatedCollection._id ? updatedCollection : seq)
-      );
-    } catch (error) {
-      console.error('Failed to update collection', error);
     }
   };
 
@@ -165,6 +145,32 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       });
     } catch (error) {
       console.error('Failed to undo remove dua', error);
+    }
+  };
+
+  const addCollection = async (collection: {
+    name: string;
+    duaIds: string[];
+    scheduled_time: string | null;
+    notification_enabled: boolean
+  }) => {
+    try {
+      const newCollection = await createCollection(collection);
+      setCollections(prevCollections => [...prevCollections, newCollection]);
+    } catch (error) {
+      console.error('Failed to create collection', error);
+      throw error; // Re-throw the error so it can be handled by the component
+    }
+  };
+
+  const updateCollection = async (collection: Collection) => {
+    try {
+      const updatedCollection = await updateUserCollection(collection);
+      setCollections(prevCollections =>
+        prevCollections.map(seq => seq._id === updatedCollection._id ? updatedCollection : seq)
+      );
+    } catch (error) {
+      console.error('Failed to update collection', error);
     }
   };
 

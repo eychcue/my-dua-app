@@ -1,8 +1,5 @@
-// File: app/collection/[id].tsx
-
 import React, { useRef, useState, useCallback, useEffect } from 'react';
-import { StyleSheet, Dimensions, FlatList, View as RNView, TouchableOpacity } from 'react-native';
-import { Text, View } from '@/components/Themed';
+import { StyleSheet, Dimensions, Text, FlatList, View as RNView, TouchableOpacity } from 'react-native';
 import { useDua } from '@/contexts/DuaContext';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import DuaDetails from '@/components/DuaDetails';
@@ -42,7 +39,6 @@ export default function CollectionViewerScreen() {
   }, [currentIndex, collectionDuas.length]);
 
   const handleClose = () => {
-    // Batch mark all viewed duas as read when closing the collection
     const viewedDuaIds = collectionDuas.slice(0, currentIndex + 1).map(dua => dua._id);
     if (viewedDuaIds.length > 0) {
       batchMarkAsRead(viewedDuaIds).catch(error => {

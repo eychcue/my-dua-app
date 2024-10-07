@@ -1,26 +1,71 @@
 // File: app/create-collection.tsx
 
 import React, { useState } from 'react';
-import { StyleSheet, TextInput, TouchableOpacity, FlatList, View as RNView } from 'react-native';
+import { StyleSheet, TextInput, TouchableOpacity, FlatList, View as RNView, Switch } from 'react-native';
 import { Text, View } from '@/components/Themed';
 import { useDua } from '@/contexts/DuaContext';
 import { useRouter } from 'expo-router';
-import { Dua } from '@/types/dua';  // Ensure this path is correct
+import { Dua } from '@/types/dua';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import * as Notifications from 'expo-notifications';
 
 export default function CreateCollectionScreen() {
   const [collectionName, setCollectionName] = useState('');
   const [selectedDuas, setSelectedDuas] = useState<string[]>([]);
+  const [scheduledTime, setScheduledTime] = useState(new Date());
+  const [notificationEnabled, setNotificationEnabled] = useState(false);
   const { duas, addCollection } = useDua();
   const router = useRouter();
 
   const handleCreateCollection = async () => {
     if (collectionName && selectedDuas.length > 0) {
-      await addCollection({
-        name: collectionName,
-        duaIds: selectedDuas,
-      });
-      router.back();
+      try {
+        const newCollection = {
+          name: collectionName,
+          duaIds: selectedDuas,
+          scheduled_time: notificationEnabled ? scheduledTime.toISOString() : null,
+          notification_enabled: notificationEnabled,
+        };
+
+        await addCollection(newCollection);
+
+        if (notificationEnabled) {
+          await scheduleNotification(newCollection);
+        }
+
+        router.back();
+      } catch (error) {
+        console.error('Failed to create collection:', error);
+        // Handle the error (e.g., show an error message to the user)
+      }
     }
+  };
+
+  const scheduleNotification = async (collection) => {
+    const { status } = await Notifications.getPermissionsAsync();
+    if (status !== 'granted') {
+      const { status } = await Notifications.requestPermissionsAsync();
+      if (status !== 'granted') {
+        alert('You need to grant notification permissions to enable this feature.');
+        return;
+      }
+    }
+
+    const trigger = new Date(collection.scheduled_time);
+    trigger.setDate(trigger.getDate() + 1);
+
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: "It's time for your Dua collection",
+        body: `Read your "${collection.name}" collection now`,
+        data: { collectionId: collection._id },
+      },
+      trigger: {
+        hour: trigger.getHours(),
+        minute: trigger.getMinutes(),
+        repeats: true,
+      },
+    });
   };
 
   const toggleDuaSelection = (duaId: string) => {
@@ -69,6 +114,22 @@ export default function CreateCollectionScreen() {
         keyExtractor={(item) => item._id}
         contentContainerStyle={styles.listContent}
       />
+      <View style={styles.notificationContainer}>
+        <Text>Enable daily notification</Text>
+        <Switch
+          value={notificationEnabled}
+          onValueChange={setNotificationEnabled}
+        />
+      </View>
+      {notificationEnabled && (
+        <DateTimePicker
+          value={scheduledTime}
+          mode="time"
+          is24Hour={true}
+          display="default"
+          onChange={(event, selectedTime) => setScheduledTime(selectedTime || scheduledTime)}
+        />
+      )}
       <TouchableOpacity
         style={[
           styles.createButton,
@@ -150,5 +211,11 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  notificationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginVertical: 10,
   },
 });
