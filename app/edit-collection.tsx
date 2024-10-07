@@ -8,51 +8,51 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
 
-export default function EditSequenceScreen() {
-  const { sequenceId } = useLocalSearchParams<{ sequenceId: string }>();
-  const { sequences, updateSequence, duas } = useDua();
+export default function EditCollectionScreen() {
+  const { collectionId } = useLocalSearchParams<{ collectionId: string }>();
+  const { collections, updateCollection, duas } = useDua();
   const router = useRouter();
 
-  const [sequence, setSequence] = useState(sequences.find(seq => seq._id === sequenceId));
-  const [sequenceName, setSequenceName] = useState(sequence?.name || '');
-  const [sequenceDuas, setSequenceDuas] = useState<Array<{ id: string; title: string; order: number }>>([]);
+  const [collection, setCollection] = useState(collections.find(seq => seq._id === collectionId));
+  const [collectionName, setCollectionName] = useState(collection?.name || '');
+  const [collectionDuas, setCollectionDuas] = useState<Array<{ id: string; title: string; order: number }>>([]);
   const [availableDuas, setAvailableDuas] = useState<Array<{ id: string; title: string }>>([]);
 
   useEffect(() => {
-    if (sequence && duas.length > 0) {
-      const orderedDuas = sequence.duaIds.map((duaId, index) => {
+    if (collection && duas.length > 0) {
+      const orderedDuas = collection.duaIds.map((duaId, index) => {
         const dua = duas.find(d => d._id === duaId);
         return { id: duaId, title: dua?.title || 'Unknown Dua', order: index + 1 };
       });
-      setSequenceDuas(orderedDuas);
+      setCollectionDuas(orderedDuas);
 
       const availableDuasList = duas
-        .filter(dua => !sequence.duaIds.includes(dua._id))
+        .filter(dua => !collection.duaIds.includes(dua._id))
         .map(dua => ({ id: dua._id, title: dua.title }));
       setAvailableDuas(availableDuasList);
     }
-  }, [sequence, duas]);
+  }, [collection, duas]);
 
   const handleSave = async () => {
-    if (sequence) {
-      const updatedSequence = {
-        ...sequence,
-        name: sequenceName,
-        duaIds: sequenceDuas.map(dua => dua.id)
+    if (collection) {
+      const updatedCollection = {
+        ...collection,
+        name: collectionName,
+        duaIds: collectionDuas.map(dua => dua.id)
       };
-      await updateSequence(updatedSequence);
+      await updateCollection(updatedCollection);
       router.back();
     }
   };
 
-  const renderSequenceDuaItem = ({ item, drag, isActive }: RenderItemParams<{ id: string; title: string; order: number }>) => (
+  const renderCollectionDuaItem = ({ item, drag, isActive }: RenderItemParams<{ id: string; title: string; order: number }>) => (
     <TouchableOpacity
       style={[styles.duaItem, isActive && styles.activeItem]}
       onLongPress={drag}
     >
       <Text style={styles.orderNumber}>{item.order}</Text>
       <Text style={styles.duaTitle}>{item.title}</Text>
-      <TouchableOpacity onPress={() => removeDuaFromSequence(item.id)}>
+      <TouchableOpacity onPress={() => removeDuaFromCollection(item.id)}>
         <Ionicons name="remove-circle-outline" size={24} color="red" />
       </TouchableOpacity>
     </TouchableOpacity>
@@ -61,44 +61,44 @@ export default function EditSequenceScreen() {
   const renderAvailableDuaItem = ({ item }: { item: { id: string; title: string } }) => (
     <TouchableOpacity
       style={styles.availableDuaItem}
-      onPress={() => addDuaToSequence(item.id)}
+      onPress={() => addDuaToCollection(item.id)}
     >
       <Text style={styles.duaTitle}>{item.title}</Text>
       <Ionicons name="add-circle-outline" size={24} color="green" />
     </TouchableOpacity>
   );
 
-  const addDuaToSequence = (duaId: string) => {
+  const addDuaToCollection = (duaId: string) => {
     const duaToAdd = availableDuas.find(dua => dua.id === duaId);
     if (duaToAdd) {
-      setSequenceDuas(prev => [...prev, { ...duaToAdd, order: prev.length + 1 }]);
+      setCollectionDuas(prev => [...prev, { ...duaToAdd, order: prev.length + 1 }]);
       setAvailableDuas(prev => prev.filter(dua => dua.id !== duaId));
     }
   };
 
-  const removeDuaFromSequence = (duaId: string) => {
-    const duaToRemove = sequenceDuas.find(dua => dua.id === duaId);
+  const removeDuaFromCollection = (duaId: string) => {
+    const duaToRemove = collectionDuas.find(dua => dua.id === duaId);
     if (duaToRemove) {
-      setSequenceDuas(prev => prev.filter(dua => dua.id !== duaId));
+      setCollectionDuas(prev => prev.filter(dua => dua.id !== duaId));
       setAvailableDuas(prev => [...prev, { id: duaId, title: duaToRemove.title }]);
     }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Edit Sequence</Text>
+      <Text style={styles.title}>Edit Collection</Text>
       <TextInput
         style={styles.input}
-        value={sequenceName}
-        onChangeText={setSequenceName}
-        placeholder="Sequence Name"
+        value={collectionName}
+        onChangeText={setCollectionName}
+        placeholder="Collection Name"
       />
-      <Text style={styles.sectionTitle}>Duas in Sequence</Text>
+      <Text style={styles.sectionTitle}>Duas in Collection</Text>
       <DraggableFlatList
-        data={sequenceDuas}
-        renderItem={renderSequenceDuaItem}
+        data={collectionDuas}
+        renderItem={renderCollectionDuaItem}
         keyExtractor={(item) => item.id}
-        onDragEnd={({ data }) => setSequenceDuas(data.map((item, index) => ({ ...item, order: index + 1 })))}
+        onDragEnd={({ data }) => setCollectionDuas(data.map((item, index) => ({ ...item, order: index + 1 })))}
         style={styles.duaList}
       />
       <Text style={styles.sectionTitle}>Available Duas</Text>

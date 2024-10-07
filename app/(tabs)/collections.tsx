@@ -11,30 +11,30 @@ import Toast from 'react-native-root-toast';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-export default function SequencesScreen() {
-  const { sequences, fetchSequences, deleteSequence } = useDua();
+export default function CollectionsScreen() {
+  const { collections, fetchCollections, deleteCollection } = useDua();
   const router = useRouter();
-  const [localSequences, setLocalSequences] = useState(sequences);
+  const [localCollections, setLocalCollections] = useState(collections);
   const deleteTimeoutRef = useRef(null);
   const [toastMessage, setToastMessage] = useState('');
 
   useEffect(() => {
-    fetchSequences();
+    fetchCollections();
   }, []);
 
   useEffect(() => {
-    setLocalSequences(sequences);
-  }, [sequences]);
+    setLocalCollections(collections);
+  }, [collections]);
 
-  const handleSequencePress = (sequenceId: string) => {
-    router.push(`/sequence/${sequenceId}`);
+  const handleCollectionPress = (collectionId: string) => {
+    router.push(`/collection/${collectionId}`);
   };
 
-  const handleDelete = (sequence) => {
-    setLocalSequences(prevSequences => prevSequences.filter(seq => seq._id !== sequence._id));
-    setToastMessage('Sequence deleted. Tap to undo.');
+  const handleDelete = (collection) => {
+    setLocalCollections(prevCollections => prevCollections.filter(seq => seq._id !== collection._id));
+    setToastMessage('Collection deleted. Tap to undo.');
     deleteTimeoutRef.current = setTimeout(() => {
-      deleteSequence(sequence._id);
+      deleteCollection(collection._id);
       setToastMessage('');
     }, 5000);
   };
@@ -44,57 +44,57 @@ export default function SequencesScreen() {
       clearTimeout(deleteTimeoutRef.current);
       deleteTimeoutRef.current = null;
     }
-    fetchSequences();
+    fetchCollections();
     setToastMessage('');
   };
 
-  const handleEdit = (sequence) => {
+  const handleEdit = (collection) => {
     router.push({
-      pathname: '/edit-sequence',
-      params: { sequenceId: sequence._id }
+      pathname: '/edit-collection',
+      params: { collectionId: collection._id }
     });
   };
 
-  const renderRightActions = (sequence) => (
+  const renderRightActions = (collection) => (
     <RNView style={styles.rightActions}>
-      <TouchableOpacity style={styles.editButton} onPress={() => handleEdit(sequence)}>
+      <TouchableOpacity style={styles.editButton} onPress={() => handleEdit(collection)}>
         <Ionicons name="pencil-outline" size={24} color="white" />
       </TouchableOpacity>
-      <TouchableOpacity style={styles.deleteButton} onPress={() => handleDelete(sequence)}>
+      <TouchableOpacity style={styles.deleteButton} onPress={() => handleDelete(collection)}>
         <Ionicons name="trash-outline" size={24} color="white" />
       </TouchableOpacity>
     </RNView>
   );
 
-  const renderSequenceItem = ({ item }) => (
+  const renderCollectionItem = ({ item }) => (
     <Swipeable
       renderRightActions={() => renderRightActions(item)}
       rightThreshold={-100}
     >
       <TouchableOpacity
-        style={styles.sequenceItem}
-        onPress={() => handleSequencePress(item._id)}
+        style={styles.collectionItem}
+        onPress={() => handleCollectionPress(item._id)}
       >
-        <Text style={styles.sequenceName}>{item.name}</Text>
-        <Text style={styles.sequenceCount}>{item.duaIds.length} duas</Text>
+        <Text style={styles.collectionName}>{item.name}</Text>
+        <Text style={styles.collectionCount}>{item.duaIds.length} duas</Text>
       </TouchableOpacity>
     </Swipeable>
   );
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>My Sequences</Text>
+      <Text style={styles.title}>My Collections</Text>
       <FlatList
-        data={localSequences}
-        renderItem={renderSequenceItem}
+        data={localCollections}
+        renderItem={renderCollectionItem}
         keyExtractor={(item) => item._id}
         contentContainerStyle={styles.listContent}
       />
       <TouchableOpacity
         style={styles.createButton}
-        onPress={() => router.push('/create-sequence')}
+        onPress={() => router.push('/create-collection')}
       >
-        <Text style={styles.createButtonText}>Create New Sequence</Text>
+        <Text style={styles.createButtonText}>Create New Collection</Text>
       </TouchableOpacity>
       {toastMessage ? (
         <Toast
@@ -129,17 +129,17 @@ const styles = StyleSheet.create({
   listContent: {
     paddingBottom: 20,
   },
-  sequenceItem: {
+  collectionItem: {
     padding: 15,
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
     backgroundColor: 'white',
   },
-  sequenceName: {
+  collectionName: {
     fontSize: 18,
     fontWeight: 'bold',
   },
-  sequenceCount: {
+  collectionCount: {
     fontSize: 14,
     color: '#666',
   },

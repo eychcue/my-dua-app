@@ -10,24 +10,24 @@ import { Ionicons } from '@expo/vector-icons';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-export default function SequenceViewerScreen() {
+export default function CollectionViewerScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { duas, sequences, batchMarkAsRead } = useDua();
+  const { duas, collections, batchMarkAsRead } = useDua();
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
   const router = useRouter();
 
-  const sequence = sequences.find(seq => seq._id === id);
-  const [sequenceDuas, setSequenceDuas] = useState<Dua[]>([]);
+  const collection = collections.find(seq => seq._id === id);
+  const [collectionDuas, setCollectionDuas] = useState<Dua[]>([]);
 
   useEffect(() => {
-    if (sequence && duas.length > 0) {
-      const filteredDuas = sequence.duaIds
+    if (collection && duas.length > 0) {
+      const filteredDuas = collection.duaIds
         .map(duaId => duas.find(dua => dua._id === duaId))
         .filter((dua): dua is Dua => dua !== undefined);
-      setSequenceDuas(filteredDuas);
+      setCollectionDuas(filteredDuas);
     }
-  }, [sequence, duas]);
+  }, [collection, duas]);
 
   const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
     if (viewableItems.length > 0) {
@@ -36,14 +36,14 @@ export default function SequenceViewerScreen() {
   }).current;
 
   const handleDuaRead = useCallback(() => {
-    if (currentIndex < sequenceDuas.length - 1) {
+    if (currentIndex < collectionDuas.length - 1) {
       flatListRef.current?.scrollToIndex({ index: currentIndex + 1, animated: true });
     }
-  }, [currentIndex, sequenceDuas.length]);
+  }, [currentIndex, collectionDuas.length]);
 
   const handleClose = () => {
-    // Batch mark all viewed duas as read when closing the sequence
-    const viewedDuaIds = sequenceDuas.slice(0, currentIndex + 1).map(dua => dua._id);
+    // Batch mark all viewed duas as read when closing the collection
+    const viewedDuaIds = collectionDuas.slice(0, currentIndex + 1).map(dua => dua._id);
     if (viewedDuaIds.length > 0) {
       batchMarkAsRead(viewedDuaIds).catch(error => {
         console.error('Failed to batch mark duas as read:', error);
@@ -52,12 +52,12 @@ export default function SequenceViewerScreen() {
     router.back();
   };
 
-  if (!sequence) {
-    return <Text>Sequence not found</Text>;
+  if (!collection) {
+    return <Text>Collection not found</Text>;
   }
 
-  if (sequenceDuas.length === 0) {
-    return <Text>No duas found in this sequence</Text>;
+  if (collectionDuas.length === 0) {
+    return <Text>No duas found in this collection</Text>;
   }
 
   return (
@@ -67,7 +67,7 @@ export default function SequenceViewerScreen() {
       </TouchableOpacity>
       <FlatList
         ref={flatListRef}
-        data={sequenceDuas}
+        data={collectionDuas}
         renderItem={({ item }) => (
           <RNView style={styles.duaContainer}>
             <DuaDetails dua={item} onRead={handleDuaRead} />
@@ -87,7 +87,7 @@ export default function SequenceViewerScreen() {
         snapToAlignment="center"
       />
       <RNView style={styles.pagination}>
-        <Text style={styles.paginationText}>{`${currentIndex + 1} / ${sequenceDuas.length}`}</Text>
+        <Text style={styles.paginationText}>{`${currentIndex + 1} / ${collectionDuas.length}`}</Text>
       </RNView>
     </RNView>
   );

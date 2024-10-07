@@ -7,16 +7,16 @@ import { useDua } from '@/contexts/DuaContext';
 import { useRouter } from 'expo-router';
 import { Dua } from '@/types/dua';  // Ensure this path is correct
 
-export default function CreateSequenceScreen() {
-  const [sequenceName, setSequenceName] = useState('');
+export default function CreateCollectionScreen() {
+  const [collectionName, setCollectionName] = useState('');
   const [selectedDuas, setSelectedDuas] = useState<string[]>([]);
-  const { duas, addSequence } = useDua();
+  const { duas, addCollection } = useDua();
   const router = useRouter();
 
-  const handleCreateSequence = async () => {
-    if (sequenceName && selectedDuas.length > 0) {
-      await addSequence({
-        name: sequenceName,
+  const handleCreateCollection = async () => {
+    if (collectionName && selectedDuas.length > 0) {
+      await addCollection({
+        name: collectionName,
         duaIds: selectedDuas,
       });
       router.back();
@@ -40,12 +40,12 @@ export default function CreateSequenceScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Create New Sequence</Text>
+      <Text style={styles.title}>Create New Collection</Text>
       <TextInput
         style={styles.input}
-        onChangeText={setSequenceName}
-        value={sequenceName}
-        placeholder="Enter sequence name"
+        onChangeText={setCollectionName}
+        value={collectionName}
+        placeholder="Enter collection name"
       />
       <Text style={styles.subtitle}>Select Duas:</Text>
       <FlatList
@@ -72,12 +72,12 @@ export default function CreateSequenceScreen() {
       <TouchableOpacity
         style={[
           styles.createButton,
-          (!sequenceName || selectedDuas.length === 0) && styles.disabledButton
+          (!collectionName || selectedDuas.length === 0) && styles.disabledButton
         ]}
-        onPress={handleCreateSequence}
-        disabled={!sequenceName || selectedDuas.length === 0}
+        onPress={handleCreateCollection}
+        disabled={!collectionName || selectedDuas.length === 0}
       >
-        <Text style={styles.createButtonText}>Create Sequence</Text>
+        <Text style={styles.createButtonText}>Create Collection</Text>
       </TouchableOpacity>
     </View>
   );

@@ -45,9 +45,9 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="sequences"
+        name="collection"
         options={{
-          title: 'Sequences',
+          title: 'Collection',
           tabBarIcon: ({ color }) => <TabBarIcon name="list" color={color} />,
         }}
       />
