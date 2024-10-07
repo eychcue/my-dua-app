@@ -1,4 +1,4 @@
-// File: app/sequence/[id].tsx
+// File: app/collection/[id].tsx
 
 import React, { useRef, useState, useCallback, useEffect } from 'react';
 import { StyleSheet, Dimensions, FlatList, View as RNView, TouchableOpacity } from 'react-native';

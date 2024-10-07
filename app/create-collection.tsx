@@ -1,4 +1,4 @@
-// File: app/create-sequence.tsx
+// File: app/create-collection.tsx
 
 import React, { useState } from 'react';
 import { StyleSheet, TextInput, TouchableOpacity, FlatList, View as RNView } from 'react-native';
