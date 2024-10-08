@@ -6,12 +6,13 @@ import { useFonts } from 'expo-font';
 import { useRouter, SplashScreen, Stack } from 'expo-router';
 import * as Notifications from 'expo-notifications';
 import { setupNotifications } from '../utils/notificationHandler';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useColorScheme, View, Text } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { RootSiblingParent } from 'react-native-root-siblings';
 import { DuaProvider } from '@/contexts/DuaContext';
 import { getOrCreateUserId } from '@/api';
+import { debounce } from 'lodash';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -29,10 +30,21 @@ export default function RootLayout() {
   const [userId, setUserId] = useState<string | null>(null);
   const [initError, setInitError] = useState<Error | null>(null);
   const router = useRouter();
+  const notificationListener = useRef<Notifications.Subscription>();
 
   useEffect(() => {
     if (error) throw error;
   }, [error]);
+
+  const handleNotification = useCallback((response: Notifications.NotificationResponse) => {
+    const collectionId = response.notification.request.content.data?.collectionId;
+    if (collectionId) {
+      // Debounce the router push
+      debounce(() => {
+        router.push(`/collection/${collectionId}`);
+      }, 300)();
+    }
+  }, [router]);
 
   useEffect(() => {
     async function initializeApp() {
@@ -46,15 +58,7 @@ export default function RootLayout() {
           setupNotifications();
 
           // Add notification response listener
-          const subscription = Notifications.addNotificationResponseReceivedListener(response => {
-            const collectionId = response.notification.request.content.data?.collectionId;
-            if (collectionId) {
-              // Use the router to navigate to the specific collection
-              router.push(`/collection/${collectionId}`);
-            }
-          });
-
-          return () => subscription.remove();
+          notificationListener.current = Notifications.addNotificationResponseReceivedListener(handleNotification);
         }
       } catch (e) {
         console.error('Failed to initialize app:', e);
@@ -63,7 +67,14 @@ export default function RootLayout() {
       }
     }
     initializeApp();
-  }, [loaded, router]);
+
+    // Cleanup function
+    return () => {
+      if (notificationListener.current) {
+        Notifications.removeNotificationSubscription(notificationListener.current);
+      }
+    };
+  }, [loaded, handleNotification]);
 
   if (!loaded || (!userId && !initError)) {
     return null;
