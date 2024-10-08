@@ -124,6 +124,10 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     try {
       await removeDuaFromUser(duaId);
       setDuas(prevDuas => prevDuas.filter(dua => dua._id !== duaId));
+
+      // Fetch and update collections after removing dua
+      const updatedCollections = await getUserCollections();
+      setCollections(updatedCollections);
     } catch (error) {
       console.error('Failed to remove dua', error);
       // If the API call fails, we should add the dua back to the local state
