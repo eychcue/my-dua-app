@@ -20,7 +20,6 @@ import { Dua, Collection } from '../types/dua';
 
 interface DuaContextType {
   duas: Dua[];
-  archivedDuas: Dua[];
   collections: Collection[];
   readCounts: { [key: string]: number };
   fetchDuas: () => Promise<void>;
@@ -34,6 +33,7 @@ interface DuaContextType {
   fetchReadCounts: () => Promise<void>;
   removeDua: (duaId: string) => Promise<void>;
   undoRemoveDua: (dua: Dua) => Promise<void>;
+  archivedDuas: Dua[];
   archiveDua: (duaId: string) => Promise<void>;
   unarchiveDua: (duaId: string) => Promise<void>;
   fetchArchivedDuas: () => Promise<void>;
@@ -221,10 +221,14 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
+  useEffect(() => {
+    fetchArchivedDuas();
+  }, []); // Fetch archived duas when the component mounts
+
+
   return (
     <DuaContext.Provider value={{
       duas,
-      archivedDuas,
       collections,
       readCounts,
       fetchDuas,
@@ -238,6 +242,7 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       fetchReadCounts,
       removeDua,
       undoRemoveDua,
+      archivedDuas,
       archiveDua: archiveDuaHandler,
       unarchiveDua: unarchiveDuaHandler,
       fetchArchivedDuas,

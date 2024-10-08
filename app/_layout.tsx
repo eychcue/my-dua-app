@@ -119,6 +119,20 @@ function RootLayoutNav({ userId }: { userId: string }) {
                       headerShown: false,
                     }}
                   />
+                  <Stack.Screen
+                    name="settings"
+                    options={{
+                      presentation: 'modal',
+                      title: 'Settings',
+                    }}
+                  />
+                  <Stack.Screen
+                    name="archived"
+                    options={{
+                      presentation: 'modal',
+                      headerShown: false,
+                    }}
+                  />
                 </Stack>
               </ThemeProvider>
             </RootSiblingParent>
