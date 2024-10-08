@@ -194,6 +194,13 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (archivedDua) {
         setArchivedDuas(prevArchivedDuas => [...prevArchivedDuas, archivedDua]);
       }
+      // Update collections
+      setCollections(prevCollections =>
+        prevCollections.map(collection => ({
+          ...collection,
+          duaIds: collection.duaIds.filter(id => id !== duaId)
+        }))
+      );
     } catch (error) {
       console.error('Failed to archive dua', error);
     }
