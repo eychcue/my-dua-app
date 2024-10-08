@@ -8,6 +8,7 @@ import { Dua } from '@/types/dua';
 import { Swipeable } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-root-toast';
+import { useRouter } from 'expo-router';
 
 export default function DuaScreen() {
   const { duas, fetchDuas, removeDua } = useDua();
@@ -15,6 +16,7 @@ export default function DuaScreen() {
   const [toastMessage, setToastMessage] = useState('');
   const [deletedDua, setDeletedDua] = useState<{ dua: Dua, index: number } | null>(null);
   const deleteTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     fetchDuas();
@@ -69,9 +71,13 @@ export default function DuaScreen() {
     </TouchableOpacity>
   );
 
+  const handleDuaPress = (dua: Dua) => {
+    router.push(`/dua/${dua._id}`);
+  };
+
   const renderDuaItem = ({ item }: { item: Dua }) => (
     <Swipeable renderRightActions={() => renderRightActions(item)}>
-      <DuaItem dua={item} />
+      <DuaItem dua={item} onPress={() => handleDuaPress(item)} />
     </Swipeable>
   );
 
@@ -129,5 +135,11 @@ const styles = StyleSheet.create({
   },
   toastText: {
     color: 'white',
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
 });

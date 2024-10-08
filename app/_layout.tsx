@@ -106,7 +106,14 @@ function RootLayoutNav({ userId }: { userId: string }) {
                 name="collection/[id]"
                 options={{
                   presentation: 'modal',
-                  headerShown: false, // Hide the header for this screen
+                  headerShown: false,
+                }}
+              />
+              <Stack.Screen
+                name="dua/[id]"
+                options={{
+                  presentation: 'modal',
+                  headerShown: false,
                 }}
               />
             </Stack>

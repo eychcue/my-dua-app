@@ -1,35 +1,36 @@
 // File: app/dua/[id].tsx
 
 import React from 'react';
-import { StyleSheet, ScrollView, Dimensions } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { StyleSheet, View } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useDua } from '@/contexts/DuaContext';
 import DuaDetails from '@/components/DuaDetails';
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-
-export default function DuaScreen() {
+export default function DuaModalScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { duas } = useDua();
+  const router = useRouter();
 
   const dua = duas.find(d => d._id === id);
 
   if (!dua) {
-    return null; // or you could return a "Dua not found" message
+    return null;
   }
 
+  const handleClose = () => {
+    router.back();
+  };
+
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <DuaDetails dua={dua} />
-    </ScrollView>
+    <View style={styles.container}>
+      <DuaDetails dua={dua} onClose={handleClose} />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    minHeight: SCREEN_HEIGHT,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
+    flex: 1,
+    backgroundColor: '#f5f5f5',
   },
 });

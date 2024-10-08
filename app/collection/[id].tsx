@@ -1,3 +1,4 @@
+// File: app/collection/[id].tsx
 import React, { useRef, useState, useCallback, useEffect } from 'react';
 import { StyleSheet, Dimensions, Text, FlatList, View as RNView, TouchableOpacity } from 'react-native';
 import { useDua } from '@/contexts/DuaContext';

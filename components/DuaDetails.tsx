@@ -1,28 +1,31 @@
 // File: components/DuaDetails.tsx
 
 import React from 'react';
-import { StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
 import { Text, View } from '@/components/Themed';
 import { Dua } from '@/types/dua';
 import { useDua } from '@/contexts/DuaContext';
+import { Ionicons } from '@expo/vector-icons';
+
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 type Props = {
   dua: Dua;
-  onRead?: () => void;
+  onClose: () => void;
 };
 
-export default function DuaDetails({ dua, onRead }: Props) {
+export default function DuaDetails({ dua, onClose }: Props) {
   const { markAsRead, readCounts } = useDua();
 
   const handleMarkAsRead = async () => {
     await markAsRead(dua._id);
-    if (onRead) {
-      onRead();
-    }
   };
 
   return (
     <View style={styles.container}>
+      <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+        <Ionicons name="close" size={24} color="black" />
+      </TouchableOpacity>
       <ScrollView
         contentContainerStyle={styles.scrollViewContent}
         showsVerticalScrollIndicator={false}
@@ -52,14 +55,13 @@ export default function DuaDetails({ dua, onRead }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
+    backgroundColor: '#f5f5f5',
   },
   scrollViewContent: {
-    flexGrow: 1,
+    minHeight: SCREEN_HEIGHT,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
   },
   title: {
     fontSize: 24,
@@ -106,5 +108,12 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 40,
+    right: 20,
+    zIndex: 10,
+    padding: 10,
   },
 });

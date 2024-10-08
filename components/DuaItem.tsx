@@ -8,21 +8,12 @@ import { useRouter } from 'expo-router';
 
 type Props = {
   dua: Dua;
+  onPress: () => void;
 };
 
-export default function DuaItem({ dua }: Props) {
-  const router = useRouter();
-
-  const handlePress = () => {
-    if (dua._id) {
-      router.push(`/dua/${dua._id}`);
-    } else {
-      console.warn('Dua _id is missing');
-    }
-  };
-
+export default function DuaItem({ dua, onPress }: Props) {
   return (
-    <TouchableOpacity onPress={handlePress} style={styles.container}>
+    <TouchableOpacity onPress={onPress} style={styles.container}>
       <View style={styles.contentContainer}>
         <Text style={styles.title}>{dua.title || 'Untitled Dua'}</Text>
         <Text style={styles.preview} numberOfLines={2}>{dua.translation || 'No translation available'}</Text>
