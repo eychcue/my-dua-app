@@ -1,11 +1,12 @@
 // File: components/DuaDetails.tsx
 
 import React from 'react';
-import { StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import { StyleSheet, ScrollView, TouchableOpacity, Dimensions, View as RNView } from 'react-native';
 import { Text, View } from '@/components/Themed';
 import { Dua } from '@/types/dua';
 import { useDua } from '@/contexts/DuaContext';
 import { Ionicons } from '@expo/vector-icons';
+import { Menu, MenuOptions, MenuOption, MenuTrigger } from 'react-native-popup-menu';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -15,17 +16,32 @@ type Props = {
 };
 
 export default function DuaDetails({ dua, onClose }: Props) {
-  const { markAsRead, readCounts } = useDua();
+  const { markAsRead, readCounts, archiveDua } = useDua();
 
   const handleMarkAsRead = async () => {
     await markAsRead(dua._id);
   };
 
+  const handleArchive = async () => {
+    await archiveDua(dua._id);
+    onClose();
+  };
+
   return (
     <View style={styles.container}>
-      <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-        <Ionicons name="close" size={24} color="black" />
-      </TouchableOpacity>
+      <RNView style={styles.header}>
+        <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+          <Ionicons name="close" size={24} color="black" />
+        </TouchableOpacity>
+        <Menu>
+          <MenuTrigger>
+            <Ionicons name="ellipsis-vertical" size={24} color="black" />
+          </MenuTrigger>
+          <MenuOptions>
+            <MenuOption onSelect={handleArchive} text="Archive" />
+          </MenuOptions>
+        </Menu>
+      </RNView>
       <ScrollView
         contentContainerStyle={styles.scrollViewContent}
         showsVerticalScrollIndicator={false}
@@ -115,5 +131,13 @@ const styles = StyleSheet.create({
     right: 20,
     zIndex: 10,
     padding: 10,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 40,
+    paddingBottom: 10,
   },
 });

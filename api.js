@@ -311,5 +311,44 @@ export const getReadCounts = async (): Promise<{ [key: string]: number }> => {
   }
 };
 
+export const archiveDua = async (duaId) => {
+  try {
+    const deviceId = await SecureStore.getItemAsync('deviceId');
+    if (!deviceId) {
+      throw new Error('Device ID not found');
+    }
+    await api.post(`/users/${deviceId}/duas/${duaId}/archive`);
+  } catch (error) {
+    console.error('Error archiving dua:', error);
+    throw error;
+  }
+};
+
+export const unarchiveDua = async (duaId) => {
+  try {
+    const deviceId = await SecureStore.getItemAsync('deviceId');
+    if (!deviceId) {
+      throw new Error('Device ID not found');
+    }
+    await api.post(`/users/${deviceId}/duas/${duaId}/unarchive`);
+  } catch (error) {
+    console.error('Error unarchiving dua:', error);
+    throw error;
+  }
+};
+
+export const getUserArchivedDuas = async () => {
+  try {
+    const deviceId = await SecureStore.getItemAsync('deviceId');
+    if (!deviceId) {
+      throw new Error('Device ID not found');
+    }
+    const response = await api.get(`/users/${deviceId}/archived_duas`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching user archived duas:', error);
+    throw error;
+  }
+};
 
 export default api;

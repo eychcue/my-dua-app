@@ -13,6 +13,7 @@ import { RootSiblingParent } from 'react-native-root-siblings';
 import { DuaProvider } from '@/contexts/DuaContext';
 import { getOrCreateUserId } from '@/api';
 import { debounce } from 'lodash';
+import { MenuProvider } from 'react-native-popup-menu';  // Add this import
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -95,31 +96,35 @@ function RootLayoutNav({ userId }: { userId: string }) {
   const colorScheme = useColorScheme();
 
   return (
-    <DuaProvider>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <RootSiblingParent>
-          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-            <Stack>
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-              <Stack.Screen
-                name="collection/[id]"
-                options={{
-                  presentation: 'modal',
-                  headerShown: false,
-                }}
-              />
-              <Stack.Screen
-                name="dua/[id]"
-                options={{
-                  presentation: 'modal',
-                  headerShown: false,
-                }}
-              />
-            </Stack>
-          </ThemeProvider>
-        </RootSiblingParent>
-      </GestureHandlerRootView>
-    </DuaProvider>
+    <View style={{ flex: 1 }}>
+      <MenuProvider>
+        <DuaProvider>
+          <GestureHandlerRootView style={{ flex: 1 }}>
+            <RootSiblingParent>
+              <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+                <Stack>
+                  <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                  <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+                  <Stack.Screen
+                    name="collection/[id]"
+                    options={{
+                      presentation: 'modal',
+                      headerShown: false,
+                    }}
+                  />
+                  <Stack.Screen
+                    name="dua/[id]"
+                    options={{
+                      presentation: 'modal',
+                      headerShown: false,
+                    }}
+                  />
+                </Stack>
+              </ThemeProvider>
+            </RootSiblingParent>
+          </GestureHandlerRootView>
+        </DuaProvider>
+      </MenuProvider>
+    </View>
   );
 }

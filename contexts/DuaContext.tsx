@@ -12,11 +12,15 @@ import {
   batchMarkDuasAsRead,
   getReadCounts,
   removeDuaFromUser,
+  archiveDua,
+  unarchiveDua,
+  getUserArchivedDuas,
 } from '../api';
 import { Dua, Collection } from '../types/dua';
 
 interface DuaContextType {
   duas: Dua[];
+  archivedDuas: Dua[];
   collections: Collection[];
   readCounts: { [key: string]: number };
   fetchDuas: () => Promise<void>;
@@ -28,14 +32,18 @@ interface DuaContextType {
   markAsRead: (duaId: string) => Promise<void>;
   batchMarkAsRead: (duaIds: string[]) => Promise<void>;
   fetchReadCounts: () => Promise<void>;
-  removeDua: (duaId: string) => Promise<void>; // Add this
-  undoRemoveDua: (dua: Dua) => Promise<void>; // Add this
+  removeDua: (duaId: string) => Promise<void>;
+  undoRemoveDua: (dua: Dua) => Promise<void>;
+  archiveDua: (duaId: string) => Promise<void>;
+  unarchiveDua: (duaId: string) => Promise<void>;
+  fetchArchivedDuas: () => Promise<void>;
 }
 
 const DuaContext = createContext<DuaContextType | undefined>(undefined);
 
 export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [duas, setDuas] = useState<Dua[]>([]);
+  const [archivedDuas, setArchivedDuas] = useState<Dua[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [readCounts, setReadCounts] = useState<{ [key: string]: number }>({});
 
@@ -178,9 +186,45 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
+  const archiveDuaHandler = async (duaId: string) => {
+    try {
+      await archiveDua(duaId);
+      setDuas(prevDuas => prevDuas.filter(dua => dua._id !== duaId));
+      const archivedDua = duas.find(dua => dua._id === duaId);
+      if (archivedDua) {
+        setArchivedDuas(prevArchivedDuas => [...prevArchivedDuas, archivedDua]);
+      }
+    } catch (error) {
+      console.error('Failed to archive dua', error);
+    }
+  };
+
+  const unarchiveDuaHandler = async (duaId: string) => {
+    try {
+      await unarchiveDua(duaId);
+      setArchivedDuas(prevArchivedDuas => prevArchivedDuas.filter(dua => dua._id !== duaId));
+      const unarchivedDua = archivedDuas.find(dua => dua._id === duaId);
+      if (unarchivedDua) {
+        setDuas(prevDuas => [...prevDuas, unarchivedDua]);
+      }
+    } catch (error) {
+      console.error('Failed to unarchive dua', error);
+    }
+  };
+
+  const fetchArchivedDuas = async () => {
+    try {
+      const fetchedArchivedDuas = await getUserArchivedDuas();
+      setArchivedDuas(fetchedArchivedDuas);
+    } catch (error) {
+      console.error('Failed to fetch archived duas', error);
+    }
+  };
+
   return (
     <DuaContext.Provider value={{
       duas,
+      archivedDuas,
       collections,
       readCounts,
       fetchDuas,
@@ -194,6 +238,9 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       fetchReadCounts,
       removeDua,
       undoRemoveDua,
+      archiveDua: archiveDuaHandler,
+      unarchiveDua: unarchiveDuaHandler,
+      fetchArchivedDuas,
     }}>
       {children}
     </DuaContext.Provider>

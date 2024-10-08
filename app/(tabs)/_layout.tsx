@@ -38,6 +38,13 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="archived"
+        options={{
+          title: 'Archived',
+          tabBarIcon: ({ color }) => <TabBarIcon name="archive" color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="create"
         options={{
           title: 'Create',

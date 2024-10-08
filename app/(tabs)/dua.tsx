@@ -1,4 +1,5 @@
-// File: app/(tabs)/dua.tsx
+// app/(tabs)/dua.tsx
+
 import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, FlatList, RefreshControl, TouchableOpacity, View as RNView } from 'react-native';
 import { Text, View } from '@/components/Themed';
@@ -11,7 +12,7 @@ import Toast from 'react-native-root-toast';
 import { useRouter } from 'expo-router';
 
 export default function DuaScreen() {
-  const { duas, fetchDuas, removeDua } = useDua();
+  const { duas, fetchDuas, removeDua, archiveDua } = useDua();
   const [localDuas, setLocalDuas] = useState<Dua[]>([]);
   const [toastMessage, setToastMessage] = useState('');
   const [deletedDua, setDeletedDua] = useState<{ dua: Dua, index: number } | null>(null);
@@ -47,6 +48,17 @@ export default function DuaScreen() {
     }, 5000);
   };
 
+  const handleArchive = async (dua: Dua) => {
+    try {
+      await archiveDua(dua._id);
+      setLocalDuas(prevDuas => prevDuas.filter(d => d._id !== dua._id));
+      setToastMessage('Dua archived');
+    } catch (error) {
+      console.error('Error archiving dua:', error);
+      setToastMessage('Failed to archive dua');
+    }
+  };
+
   const handleUndo = () => {
     if (deleteTimeoutRef.current) {
       clearTimeout(deleteTimeoutRef.current);
@@ -66,9 +78,14 @@ export default function DuaScreen() {
   };
 
   const renderRightActions = (dua: Dua) => (
-    <TouchableOpacity style={styles.deleteButton} onPress={() => handleDelete(dua)}>
-      <Ionicons name="trash-outline" size={24} color="white" />
-    </TouchableOpacity>
+    <RNView style={styles.rightActions}>
+      <TouchableOpacity style={styles.archiveButton} onPress={() => handleArchive(dua)}>
+        <Ionicons name="archive-outline" size={24} color="white" />
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.deleteButton} onPress={() => handleDelete(dua)}>
+        <Ionicons name="trash-outline" size={24} color="white" />
+      </TouchableOpacity>
+    </RNView>
   );
 
   const handleDuaPress = (dua: Dua) => {
@@ -93,7 +110,7 @@ export default function DuaScreen() {
           <RefreshControl refreshing={false} onRefresh={handleRefresh} />
         }
       />
-      {toastMessage && deletedDua && (
+      {toastMessage && (
         <Toast
           visible={!!toastMessage}
           position={Toast.positions.BOTTOM}
@@ -126,6 +143,16 @@ const styles = StyleSheet.create({
   listContent: {
     paddingBottom: 20,
   },
+  rightActions: {
+    flexDirection: 'row',
+  },
+  archiveButton: {
+    backgroundColor: 'orange',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 80,
+    height: '100%',
+  },
   deleteButton: {
     backgroundColor: 'red',
     justifyContent: 'center',
@@ -135,11 +162,5 @@ const styles = StyleSheet.create({
   },
   toastText: {
     color: 'white',
-  },
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
 });
