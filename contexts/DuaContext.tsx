@@ -17,6 +17,7 @@ import {
   getUserArchivedDuas,
 } from '../api';
 import { Dua, Collection } from '../types/dua';
+import { cancelCollectionNotification } from '../utils/notificationHandler';
 
 interface DuaContextType {
   duas: Dua[];
@@ -83,6 +84,7 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const deleteCollection = async (collectionId: string) => {
     try {
       await deleteUserCollection(collectionId);
+      await cancelCollectionNotification(collectionId);
       setCollections(prevCollections => prevCollections.filter(seq => seq._id !== collectionId));
     } catch (error) {
       console.error('Failed to delete collection', error);
@@ -165,13 +167,14 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     duaIds: string[];
     scheduled_time: string | null;
     notification_enabled: boolean
-  }) => {
+  }): Promise<Collection> => {
     try {
       const newCollection = await createCollection(collection);
       setCollections(prevCollections => [...prevCollections, newCollection]);
+      return newCollection;
     } catch (error) {
       console.error('Failed to create collection', error);
-      throw error; // Re-throw the error so it can be handled by the component
+      throw error;
     }
   };
 

@@ -19,12 +19,11 @@ export const scheduleCollectionNotification = async (collection: Collection) => 
 
   const { status } = await Notifications.getPermissionsAsync();
   if (status !== 'granted') {
-    const { status } = await Notifications.requestPermissionsAsync();
-    if (status !== 'granted') {
-      console.log('Notification permissions not granted');
-      return;
-    }
+    console.log('Notification permissions not granted');
+    return;
   }
+
+  await cancelCollectionNotification(collection._id);
 
   const trigger = new Date(collection.scheduled_time);
   trigger.setDate(trigger.getDate() + 1);
@@ -33,7 +32,7 @@ export const scheduleCollectionNotification = async (collection: Collection) => 
     content: {
       title: "It's time for your Dua collection",
       body: `Read your "${collection.name}" collection now`,
-      data: { collectionId: collection._id },  // Make sure we're passing the correct _id
+      data: { collectionId: collection._id },
     },
     trigger: {
       hour: trigger.getHours(),

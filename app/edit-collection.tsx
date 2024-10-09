@@ -1,13 +1,14 @@
 // File: app/edit-collection.tsx
 
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, TextInput, TouchableOpacity, View as RNView, Switch, FlatList } from 'react-native';
+import { StyleSheet, TextInput, TouchableOpacity, View as RNView, Switch, FlatList, Alert } from 'react-native';
 import { Text, View } from '@/components/Themed';
 import { useDua } from '@/contexts/DuaContext';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Notifications from 'expo-notifications';
+import { scheduleCollectionNotification, cancelCollectionNotification } from '../utils/notificationHandler';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function EditCollectionScreen() {
@@ -39,23 +40,50 @@ export default function EditCollectionScreen() {
 
   const handleSave = async () => {
     if (collection) {
-      const updatedCollection = {
-        ...collection,
-        name: collectionName,
-        duaIds: collectionDuas.map(dua => dua.id),
-        scheduled_time: notificationEnabled ? scheduledTime.toISOString() : null,
-        notification_enabled: notificationEnabled,
-      };
-      await updateCollection(updatedCollection);
+      try {
+        if (notificationEnabled) {
+          const permissionStatus = await checkNotificationPermissions();
+          if (!permissionStatus) {
+            setNotificationEnabled(false);
+            return;
+          }
+        }
 
-      if (notificationEnabled) {
-        await scheduleNotification(updatedCollection);
-      } else {
-        await Notifications.cancelScheduledNotificationAsync(collection._id);
+        const updatedCollection = {
+          ...collection,
+          name: collectionName,
+          duaIds: collectionDuas.map(dua => dua.id),
+          scheduled_time: notificationEnabled ? scheduledTime.toISOString() : null,
+          notification_enabled: notificationEnabled,
+        };
+
+        await updateCollection(updatedCollection);
+
+        if (notificationEnabled) {
+          await cancelCollectionNotification(collection._id);
+          await scheduleCollectionNotification(updatedCollection);
+        } else {
+          await cancelCollectionNotification(collection._id);
+        }
+
+        router.back();
+      } catch (error) {
+        console.error('Failed to update collection:', error);
+        Alert.alert('Error', 'Failed to update collection. Please try again.');
       }
-
-      router.back();
     }
+  };
+
+  const checkNotificationPermissions = async () => {
+    const { status } = await Notifications.getPermissionsAsync();
+    if (status !== 'granted') {
+      const { status: newStatus } = await Notifications.requestPermissionsAsync();
+      if (newStatus !== 'granted') {
+        Alert.alert('Permission Required', 'You need to grant notification permissions to enable this feature.');
+        return false;
+      }
+    }
+    return true;
   };
 
   const scheduleNotification = async (collection) => {
