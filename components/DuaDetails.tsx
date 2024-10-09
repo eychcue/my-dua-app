@@ -1,6 +1,6 @@
 // File: components/DuaDetails.tsx
 
-import React from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, ScrollView, TouchableOpacity, Dimensions, View as RNView } from 'react-native';
 import { Text, View } from '@/components/Themed';
 import { Dua } from '@/types/dua';
@@ -16,15 +16,25 @@ type Props = {
 };
 
 export default function DuaDetails({ dua, onClose }: Props) {
-  const { markAsRead, readCounts, archiveDua } = useDua();
+  const { markAsRead, readCounts, archiveDua, isOnline } = useDua();
+  const [showOfflineIndicator, setShowOfflineIndicator] = useState(false);
 
   const handleMarkAsRead = async () => {
     await markAsRead(dua._id);
+    if (!isOnline) {
+      setShowOfflineIndicator(true);
+      setTimeout(() => setShowOfflineIndicator(false), 2000); // Hide indicator after 2 seconds
+    }
   };
 
   const handleArchive = async () => {
-    await archiveDua(dua._id);
-    onClose();
+    if (isOnline) {
+      await archiveDua(dua._id);
+      onClose();
+    } else {
+      // You might want to show a more persistent notification for this action
+      alert("Archiving is not available offline. Please try again when you're back online.");
+    }
   };
 
   return (
@@ -47,7 +57,10 @@ export default function DuaDetails({ dua, onClose }: Props) {
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.title}>{dua.title}</Text>
-        <Text style={styles.readCount}>Read {readCounts[dua._id] || 0} times</Text>
+        <Text style={styles.readCount}>
+          Read {readCounts[dua._id] || 0} times
+          {!isOnline && showOfflineIndicator && " (Saved offline)"}
+        </Text>
         <View style={styles.separator} />
         <Text style={styles.arabic}>{dua.arabic}</Text>
         <View style={styles.separator} />
@@ -64,6 +77,11 @@ export default function DuaDetails({ dua, onClose }: Props) {
           <Text style={styles.readButtonText}>Mark as Read</Text>
         </TouchableOpacity>
       </ScrollView>
+      {!isOnline && (
+        <View style={styles.offlineIndicator}>
+          <Text style={styles.offlineText}>Offline Mode</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -140,4 +158,17 @@ const styles = StyleSheet.create({
     paddingTop: 40,
     paddingBottom: 10,
   },
+  offlineIndicator: {
+    position: 'absolute',
+    top: 60,
+    right: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 5,
+  },
+  offlineText: {
+    color: 'white',
+    fontSize: 12,
+  },  
 });

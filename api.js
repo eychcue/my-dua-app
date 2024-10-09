@@ -4,6 +4,8 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import { BackendDua, Collection } from './types/dua';
+import NetInfo from '@react-native-community/netinfo';
+import { getOfflineReads, clearOfflineReads } from './utils/offlineStorage';
 
 const BASE_URL = 'https://9b0c-69-140-179-172.ngrok-free.app'; // Verify this URL
 
@@ -297,6 +299,20 @@ export const batchMarkDuasAsRead = async (duaIds: string[]): Promise<{ [key: str
   }
 };
 
+export const batchUpdateReadCount = async (updates: Record<string, number>): Promise<Record<string, number>> => {
+  try {
+    const deviceId = await SecureStore.getItemAsync('deviceId');
+    if (!deviceId) {
+      throw new Error('Device ID not found');
+    }
+    const response = await api.put(`/users/${deviceId}/duas/batch_update_read_count`, updates);
+    return response.data.updated_counts;
+  } catch (error) {
+    console.error('Error batch updating read counts:', error);
+    throw error;
+  }
+};
+
 export const getReadCounts = async (): Promise<{ [key: string]: number }> => {
   try {
     const deviceId = await SecureStore.getItemAsync('deviceId');
@@ -308,6 +324,22 @@ export const getReadCounts = async (): Promise<{ [key: string]: number }> => {
   } catch (error) {
     console.error('Error fetching read counts:', error);
     throw error;
+  }
+};
+
+export const syncOfflineReads = async () => {
+  const netInfo = await NetInfo.fetch();
+  if (netInfo.isConnected) {
+    try {
+      const offlineReads = await getOfflineReads();
+      if (offlineReads.length > 0) {
+        const duaIds = offlineReads.flatMap(read => Array(read.count).fill(read.duaId));
+        await batchMarkDuasAsRead(duaIds);
+        await clearOfflineReads();
+      }
+    } catch (error) {
+      console.error('Error syncing offline reads:', error);
+    }
   }
 };
 

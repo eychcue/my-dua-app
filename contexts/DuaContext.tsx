@@ -10,6 +10,7 @@ import {
   updateUserCollection,
   markDuaAsRead,
   batchMarkDuasAsRead,
+  batchUpdateReadCount,
   getReadCounts,
   removeDuaFromUser,
   archiveDua,
@@ -18,6 +19,8 @@ import {
 } from '../api';
 import { Dua, Collection } from '../types/dua';
 import { cancelCollectionNotification } from '../utils/notificationHandler';
+import NetInfo from '@react-native-community/netinfo';
+import { getOfflineReads, addOfflineRead, clearOfflineReads } from '../utils/offlineStorage';
 
 interface DuaContextType {
   duas: Dua[];
@@ -47,6 +50,39 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [archivedDuas, setArchivedDuas] = useState<Dua[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [readCounts, setReadCounts] = useState<{ [key: string]: number }>({});
+  const [isOnline, setIsOnline] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener(state => {
+      setIsOnline(state.isConnected ?? false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (isOnline) {
+      syncOfflineReads();
+    }
+  }, [isOnline]);
+
+  const syncOfflineReads = async () => {
+    try {
+      const offlineReads = await getOfflineReads();
+      if (offlineReads.length > 0) {
+        const updates = offlineReads.reduce((acc, { duaId, count }) => {
+          acc[duaId] = (acc[duaId] || 0) + count;
+          return acc;
+        }, {} as Record<string, number>);
+
+        const updatedCounts = await batchUpdateReadCount(updates);
+        setReadCounts(prev => ({ ...prev, ...updatedCounts }));
+        await clearOfflineReads();
+      }
+    } catch (error) {
+      console.error('Failed to sync offline reads:', error);
+    }
+  };
 
   useEffect(() => {
     fetchDuas();
@@ -93,10 +129,15 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const markAsRead = async (duaId: string) => {
     try {
-      const updatedCount = await markDuaAsRead(duaId);
-      setReadCounts(prev => ({ ...prev, [duaId]: updatedCount }));
+      if (isOnline) {
+        const updatedCount = await markDuaAsRead(duaId);
+        setReadCounts(prev => ({ ...prev, [duaId]: updatedCount }));
+      } else {
+        await addOfflineRead(duaId);
+        setReadCounts(prev => ({ ...prev, [duaId]: (prev[duaId] || 0) + 1 }));
+      }
     } catch (error) {
-      console.error('Failed to mark dua as read', error);
+      console.error('Failed to mark dua as read:', error);
     }
   };
 
@@ -256,6 +297,7 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       archiveDua: archiveDuaHandler,
       unarchiveDua: unarchiveDuaHandler,
       fetchArchivedDuas,
+      isOnline,
     }}>
       {children}
     </DuaContext.Provider>
