@@ -2,17 +2,18 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Dua } from '@/types/dua';
 
-interface OfflineRead {
-  duaId: string;
-  count: number;
-}
-
 const OFFLINE_READS_KEY = 'offlineReads';
 const OFFLINE_ARCHIVES_KEY = 'offlineArchives';
 const OFFLINE_UNARCHIVES_KEY = 'offlineUnarchives';
 const OFFLINE_ARCHIVED_DUAS_KEY = 'offlineArchivedDuas'
 const OFFLINE_DELETED_DUAS_KEY = 'offlineDeletedDuas';
 const OFFLINE_DELETION_ACTIONS_KEY = 'offlineDeletionActions';
+const OFFLINE_DUAS_KEY = 'offlineDuas';
+
+interface OfflineRead {
+  duaId: string;
+  count: number;
+}
 
 interface OfflineArchiveAction {
   duaId: string;
@@ -24,6 +25,23 @@ interface DeletionAction {
   action: 'delete' | 'undoDelete';
 }
 
+export const getOfflineDuas = async (): Promise<Dua[]> => {
+  try {
+    const jsonValue = await AsyncStorage.getItem(OFFLINE_DUAS_KEY);
+    return jsonValue != null ? JSON.parse(jsonValue) : [];
+  } catch (e) {
+    console.error('Error reading offline duas:', e);
+    return [];
+  }
+};
+
+export const setOfflineDuas = async (duas: Dua[]): Promise<void> => {
+  try {
+    await AsyncStorage.setItem(OFFLINE_DUAS_KEY, JSON.stringify(duas));
+  } catch (e) {
+    console.error('Error setting offline duas:', e);
+  }
+};
 
 export const getOfflineDeletedDuas = async (): Promise<Dua[]> => {
   try {

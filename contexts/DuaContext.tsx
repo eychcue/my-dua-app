@@ -33,6 +33,8 @@ import { getOfflineReads, addOfflineRead, clearOfflineReads,
   addOfflineDeletionAction,
   getOfflineDeletionActions,
   clearOfflineDeletionActions,
+  getOfflineDuas,
+  setOfflineDuas,
  } from '../utils/offlineStorage';
 
 interface DuaContextType {
@@ -194,8 +196,16 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const fetchDuas = async () => {
     try {
-      const fetchedDuas = await getUserDuas();
-      setDuas(fetchedDuas);
+      if (isOnline) {
+        const fetchedDuas = await getUserDuas();
+        setDuas(fetchedDuas);
+        // Store fetched duas locally for offline access
+        await setOfflineDuas(fetchedDuas);
+      } else {
+        // If offline, get duas from local storage
+        const offlineDuas = await getOfflineDuas();
+        setDuas(offlineDuas);
+      }
     } catch (error) {
       console.error('Failed to fetch duas', error);
     }
@@ -203,8 +213,14 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const addDua = async (dua: Dua) => {
     try {
-      await addDuaToUser(dua._id);
-      setDuas(prevDuas => [...prevDuas, dua]);
+      if (isOnline) {
+        await addDuaToUser(dua._id);
+      }
+      setDuas(prevDuas => {
+        const updatedDuas = [...prevDuas, dua];
+        setOfflineDuas(updatedDuas); // Update offline storage
+        return updatedDuas;
+      });
     } catch (error) {
       console.error('Failed to add dua', error);
     }
@@ -284,7 +300,12 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         await addOfflineDeletionAction({ duaId, action: 'delete' });
       }
 
-      setDuas(prevDuas => prevDuas.filter(dua => dua._id !== duaId));
+      setDuas(prevDuas => {
+        const updatedDuas = prevDuas.filter(dua => dua._id !== duaId);
+        setOfflineDuas(updatedDuas); // Update offline storage
+        return updatedDuas;
+      });
+
       setDeletedDuas(prevDeletedDuas => {
         const updatedDeletedDuas = [...prevDeletedDuas, duaToRemove];
         setOfflineDeletedDuas(updatedDeletedDuas);
@@ -315,7 +336,9 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         if (prevDuas.some(d => d._id === dua._id)) {
           return prevDuas; // Dua already exists, don't add it again
         }
-        return [...prevDuas, dua];
+        const updatedDuas = [...prevDuas, dua];
+        setOfflineDuas(updatedDuas); // Update offline storage
+        return updatedDuas;
       });
 
       setDeletedDuas(prevDeletedDuas => {
