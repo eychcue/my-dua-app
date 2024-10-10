@@ -1,6 +1,6 @@
 // utils/offlineStorage.ts
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Dua } from '@/types/dua';
+import { Dua, Collection } from '@/types/dua';
 
 const OFFLINE_READS_KEY = 'offlineReads';
 const OFFLINE_ARCHIVES_KEY = 'offlineArchives';
@@ -24,6 +24,76 @@ interface DeletionAction {
   duaId: string;
   action: 'delete' | 'undoDelete';
 }
+
+const OFFLINE_COLLECTIONS_KEY = 'offlineCollections';
+const OFFLINE_COLLECTION_ACTIONS_KEY = 'offlineCollectionActions';
+
+export interface CollectionAction {
+  type: 'create' | 'update' | 'delete';
+  collection: Collection;
+  timestamp: number;
+}
+
+export const getOfflineCollections = async (): Promise<Collection[]> => {
+  try {
+    const jsonValue = await AsyncStorage.getItem(OFFLINE_COLLECTIONS_KEY);
+    return jsonValue != null ? JSON.parse(jsonValue) : [];
+  } catch (e) {
+    console.error('Error reading offline collections:', e);
+    return [];
+  }
+};
+
+export const setOfflineCollections = async (collections: Collection[]): Promise<void> => {
+  try {
+    const jsonValue = JSON.stringify(collections);
+    await AsyncStorage.setItem(OFFLINE_COLLECTIONS_KEY, jsonValue);
+  } catch (e) {
+    console.error('Error setting offline collections:', e);
+  }
+};
+
+interface CollectionAction {
+  type: 'add' | 'update' | 'delete';
+  collection: Collection;
+}
+
+export const addOfflineCollectionAction = async (action: CollectionAction): Promise<void> => {
+  try {
+    const existingActions = await getOfflineCollectionActions();
+    let updatedActions;
+    if (action.type === 'delete') {
+      // For delete actions, remove all previous actions for this collection
+      updatedActions = existingActions.filter(a => a.collection._id !== action.collection._id);
+    } else {
+      // For create or update actions, keep previous actions
+      updatedActions = existingActions;
+    }
+    updatedActions.push({ ...action, timestamp: Date.now() });
+    await AsyncStorage.setItem(OFFLINE_COLLECTION_ACTIONS_KEY, JSON.stringify(updatedActions));
+  } catch (e) {
+    console.error('Error adding offline collection action:', e);
+  }
+};
+
+export const getOfflineCollectionActions = async (): Promise<CollectionAction[]> => {
+  try {
+    const jsonValue = await AsyncStorage.getItem(OFFLINE_COLLECTION_ACTIONS_KEY);
+    return jsonValue != null ? JSON.parse(jsonValue) : [];
+  } catch (e) {
+    console.error('Error reading offline collection actions:', e);
+    return [];
+  }
+};
+
+export const clearOfflineCollectionActions = async (): Promise<void> => {
+  try {
+    await AsyncStorage.removeItem(OFFLINE_COLLECTION_ACTIONS_KEY);
+  } catch (e) {
+    console.error('Error clearing offline collection actions:', e);
+  }
+};
+
 
 export const getOfflineDuas = async (): Promise<Dua[]> => {
   try {

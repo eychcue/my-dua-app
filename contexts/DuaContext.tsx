@@ -1,6 +1,6 @@
 // File: contexts/DuaContext.tsx
 
-import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback } from 'react';
 import {
   getUserDuas,
   addDuaToUser,
@@ -18,6 +18,7 @@ import {
   getUserArchivedDuas,
   batchUpdateArchiveStatus,
   batchUpdateDeletionStatus,
+  batchUpdateCollections,
 } from '../api';
 import { Dua, Collection } from '../types/dua';
 import { cancelCollectionNotification } from '../utils/notificationHandler';
@@ -35,6 +36,11 @@ import { getOfflineReads, addOfflineRead, clearOfflineReads,
   clearOfflineDeletionActions,
   getOfflineDuas,
   setOfflineDuas,
+  getOfflineCollections,
+  setOfflineCollections,
+  addOfflineCollectionAction,
+  getOfflineCollectionActions,
+  clearOfflineCollectionActions,
  } from '../utils/offlineStorage';
 
 interface DuaContextType {
@@ -81,8 +87,62 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       syncOfflineReads();
       syncOfflineArchiveActions();
       syncOfflineDeletionActions();
+      syncOfflineCollectionActions();
     }
   }, [isOnline]);
+
+  const syncOfflineCollectionActions = async () => {
+    try {
+      const offlineActions = await getOfflineCollectionActions();
+      console.log('Raw offline actions:', JSON.stringify(offlineActions, null, 2));
+
+      if (offlineActions.length > 0) {
+        const sortedActions = offlineActions.sort((a, b) => a.timestamp - b.timestamp);
+        console.log('Sorted actions:', JSON.stringify(sortedActions, null, 2));
+
+        const finalActions = sortedActions.reduce((acc, action) => {
+          const existingIndex = acc.findIndex(a =>
+            a.collection._id === action.collection._id ||
+            a.collection.name === action.collection.name
+          );
+          if (existingIndex !== -1) {
+            if (action.type === 'delete') {
+              acc[existingIndex] = action;
+            } else if (action.type === 'update' || action.type === 'create') {
+              acc[existingIndex] = {
+                ...action,
+                collection: {
+                  ...acc[existingIndex].collection,
+                  ...action.collection
+                }
+              };
+            }
+          } else {
+            acc.push(action);
+          }
+          return acc;
+        }, []);
+
+        console.log('Final actions after merging:', JSON.stringify(finalActions, null, 2));
+
+        const actionsForApi = finalActions.map(action => ({
+          type: action.type,
+          collection: {
+            ...action.collection,
+            _id: action.collection._id
+          }
+        }));
+
+        console.log('Actions prepared for API:', JSON.stringify(actionsForApi, null, 2));
+
+        await batchUpdateCollections(actionsForApi);
+        await clearOfflineCollectionActions();
+        await fetchCollections();
+      }
+    } catch (error) {
+      console.error('Failed to sync offline collection actions:', error);
+    }
+  };
 
   const syncOfflineReads = async () => {
     try {
@@ -226,20 +286,36 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  const fetchCollections = async () => {
+  const fetchCollections = useCallback(async () => {
     try {
-      const fetchedCollections = await getUserCollections();
-      setCollections(fetchedCollections);
+      if (isOnline) {
+        const fetchedCollections = await getUserCollections();
+        const processedCollections = fetchedCollections.map(collection => ({
+          ...collection,
+          _id: collection._id.toString() // Ensure _id is always a string
+        }));
+        setCollections(processedCollections);
+        await setOfflineCollections(processedCollections);
+      } else {
+        const offlineCollections = await getOfflineCollections();
+        setCollections(offlineCollections);
+      }
     } catch (error) {
       console.error('Failed to fetch collections', error);
     }
-  };
+  }, [isOnline]);
 
   const deleteCollection = async (collectionId: string) => {
     try {
-      await deleteUserCollection(collectionId);
-      await cancelCollectionNotification(collectionId);
-      setCollections(prevCollections => prevCollections.filter(seq => seq._id !== collectionId));
+      if (isOnline) {
+        await deleteUserCollection(collectionId);
+      } else {
+        const collectionToDelete = collections.find(c => c._id === collectionId);
+        if (collectionToDelete) {
+          await addOfflineCollectionAction({ type: 'delete', collection: collectionToDelete, timestamp: Date.now() });
+        }
+      }
+      setCollections(prev => prev.filter(collection => collection._id !== collectionId));
     } catch (error) {
       console.error('Failed to delete collection', error);
     }
@@ -351,27 +427,31 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  const addCollection = async (collection: {
-    name: string;
-    duaIds: string[];
-    scheduled_time: string | null;
-    notification_enabled: boolean
-  }): Promise<Collection> => {
+  const addCollection = async (collection: Omit<Collection, '_id'>) => {
     try {
-      const newCollection = await createCollection(collection);
-      setCollections(prevCollections => [...prevCollections, newCollection]);
-      return newCollection;
+      if (isOnline) {
+        const newCollection = await createCollection(collection);
+        setCollections(prev => [...prev, newCollection]);
+      } else {
+        const tempId = `temp_${Date.now()}`;
+        const newCollection = { ...collection, _id: tempId };
+        await addOfflineCollectionAction({ type: 'create', collection: newCollection, timestamp: Date.now() });
+        setCollections(prev => [...prev, newCollection]);
+      }
     } catch (error) {
-      console.error('Failed to create collection', error);
-      throw error;
+      console.error('Failed to add collection', error);
     }
   };
 
-  const updateCollection = async (collection: Collection) => {
+  const updateCollection = async (updatedCollection: Collection) => {
     try {
-      const updatedCollection = await updateUserCollection(collection);
-      setCollections(prevCollections =>
-        prevCollections.map(seq => seq._id === updatedCollection._id ? updatedCollection : seq)
+      if (isOnline) {
+        await updateUserCollection(updatedCollection);
+      } else {
+        await addOfflineCollectionAction({ type: 'update', collection: updatedCollection, timestamp: Date.now() });
+      }
+      setCollections(prev =>
+        prev.map(collection => collection._id === updatedCollection._id ? updatedCollection : collection)
       );
     } catch (error) {
       console.error('Failed to update collection', error);

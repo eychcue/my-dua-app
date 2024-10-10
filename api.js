@@ -411,4 +411,21 @@ export const batchUpdateDeletionStatus = async (actions) => {
   }
 };
 
+export const batchUpdateCollections = async (actions) => {
+  try {
+    const deviceId = await getOrCreateUserId();
+    console.log('Sending batch update request:', { deviceId, actions });
+    const response = await axios.put(`${BASE_URL}/users/${deviceId}/collections/batch_update`, { actions });
+    console.log('Batch update response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error in batchUpdateCollections:', error);
+    if (error.response) {
+      console.error('Error response:', error.response.data);
+      console.error('Error status:', error.response.status);
+    }
+    throw error;
+  }
+};
+
 export default api;

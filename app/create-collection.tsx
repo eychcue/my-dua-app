@@ -15,13 +15,13 @@ export default function CreateCollectionScreen() {
   const [selectedDuas, setSelectedDuas] = useState<string[]>([]);
   const [scheduledTime, setScheduledTime] = useState(new Date());
   const [notificationEnabled, setNotificationEnabled] = useState(false);
-  const { duas, addCollection } = useDua();
+  const { duas, addCollection, isOnline } = useDua();
   const router = useRouter();
 
   const handleCreateCollection = async () => {
     if (collectionName && selectedDuas.length > 0) {
       try {
-        if (notificationEnabled) {
+        if (notificationEnabled && isOnline) {
           const permissionStatus = await checkNotificationPermissions();
           if (!permissionStatus) {
             setNotificationEnabled(false);
@@ -36,14 +36,10 @@ export default function CreateCollectionScreen() {
           notification_enabled: notificationEnabled,
         };
 
-        const createdCollection = await addCollection(newCollection);
+        await addCollection(newCollection);
 
-        if (!createdCollection) {
-          throw new Error('Failed to create collection');
-        }
-
-        if (notificationEnabled && createdCollection.notification_enabled) {
-          await scheduleCollectionNotification(createdCollection);
+        if (notificationEnabled && isOnline) {
+          await scheduleCollectionNotification(newCollection);
         }
 
         router.back();

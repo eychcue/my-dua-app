@@ -13,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 export default function EditCollectionScreen() {
   const { collectionId } = useLocalSearchParams<{ collectionId: string }>();
-  const { collections, updateCollection, duas } = useDua();
+  const { collections, updateCollection, duas, isOnline } = useDua();
   const router = useRouter();
 
   const [collection, setCollection] = useState(collections.find(seq => seq._id === collectionId));
@@ -41,7 +41,7 @@ export default function EditCollectionScreen() {
   const handleSave = async () => {
     if (collection) {
       try {
-        if (notificationEnabled) {
+        if (notificationEnabled && isOnline) {
           const permissionStatus = await checkNotificationPermissions();
           if (!permissionStatus) {
             setNotificationEnabled(false);
@@ -59,11 +59,13 @@ export default function EditCollectionScreen() {
 
         await updateCollection(updatedCollection);
 
-        if (notificationEnabled) {
-          await cancelCollectionNotification(collection._id);
-          await scheduleCollectionNotification(updatedCollection);
-        } else {
-          await cancelCollectionNotification(collection._id);
+        if (isOnline) {
+          if (notificationEnabled) {
+            await cancelCollectionNotification(collection._id);
+            await scheduleCollectionNotification(updatedCollection);
+          } else {
+            await cancelCollectionNotification(collection._id);
+          }
         }
 
         router.back();
