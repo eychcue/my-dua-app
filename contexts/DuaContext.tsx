@@ -321,7 +321,7 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  const markAsRead = async (duaId: string) => {
+  const markAsRead = useCallback(async (duaId: string) => {
     try {
       if (isOnline) {
         const updatedCount = await markDuaAsRead(duaId);
@@ -333,12 +333,20 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     } catch (error) {
       console.error('Failed to mark dua as read:', error);
     }
-  };
+  }, [isOnline]);
 
   const batchMarkAsRead = async (duaIds: string[]) => {
     try {
-      const updatedCounts = await batchMarkDuasAsRead(duaIds);
-      setReadCounts(prev => ({ ...prev, ...updatedCounts }));
+      if (isOnline) {
+        const updatedCounts = await batchMarkDuasAsRead(duaIds);
+        setReadCounts(prev => ({ ...prev, ...updatedCounts }));
+      } else {
+        // Handle offline scenario
+        for (const duaId of duaIds) {
+          await addOfflineRead(duaId);
+          setReadCounts(prev => ({ ...prev, [duaId]: (prev[duaId] || 0) + 1 }));
+        }
+      }
     } catch (error) {
       console.error('Failed to batch mark duas as read', error);
     }

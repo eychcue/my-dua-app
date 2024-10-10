@@ -1,6 +1,6 @@
 // File: components/DuaDetails.tsx
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { StyleSheet, ScrollView, TouchableOpacity, Dimensions, View as RNView } from 'react-native';
 import { Text, View } from '@/components/Themed';
 import { Dua } from '@/types/dua';
@@ -18,14 +18,19 @@ type Props = {
 export default function DuaDetails({ dua, onClose }: Props) {
   const { markAsRead, readCounts, archiveDua, isOnline } = useDua();
   const [showOfflineIndicator, setShowOfflineIndicator] = useState(false);
+  const [isMarkingAsRead, setIsMarkingAsRead] = useState(false);
 
-  const handleMarkAsRead = async () => {
+  const handleMarkAsRead = useCallback(async () => {
+    if (isMarkingAsRead) return;
+
+    setIsMarkingAsRead(true);
     await markAsRead(dua._id);
     if (!isOnline) {
       setShowOfflineIndicator(true);
-      setTimeout(() => setShowOfflineIndicator(false), 2000); // Hide indicator after 2 seconds
+      setTimeout(() => setShowOfflineIndicator(false), 2000);
     }
-  };
+    setIsMarkingAsRead(false);
+  }, [dua._id, markAsRead, isOnline, isMarkingAsRead]);
 
   const handleArchive = async () => {
     if (isOnline) {
@@ -73,8 +78,14 @@ export default function DuaDetails({ dua, onClose }: Props) {
             <Text style={styles.description}>{dua.description}</Text>
           </>
         )}
-        <TouchableOpacity style={styles.readButton} onPress={handleMarkAsRead}>
-          <Text style={styles.readButtonText}>Mark as Read</Text>
+        <TouchableOpacity
+          style={[styles.readButton, isMarkingAsRead && styles.disabledButton]}
+          onPress={handleMarkAsRead}
+          disabled={isMarkingAsRead}
+        >
+          <Text style={styles.readButtonText}>
+            {isMarkingAsRead ? 'Marking as Read...' : 'Mark as Read'}
+          </Text>
         </TouchableOpacity>
       </ScrollView>
       {!isOnline && (
@@ -138,6 +149,9 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     marginTop: 20,
   },
+  disabledButton: {
+    backgroundColor: '#A5D6A7',
+  },  
   readButtonText: {
     color: 'white',
     fontSize: 16,
@@ -170,5 +184,5 @@ const styles = StyleSheet.create({
   offlineText: {
     color: 'white',
     fontSize: 12,
-  },  
+  },
 });
