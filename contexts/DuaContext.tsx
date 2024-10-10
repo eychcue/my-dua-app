@@ -21,7 +21,7 @@ import {
   batchUpdateCollections,
 } from '../api';
 import { Dua, Collection } from '../types/dua';
-import { cancelCollectionNotification } from '../utils/notificationHandler';
+import { cancelCollectionNotification, clearOrphanedNotifications, scheduleCollectionNotification } from '../utils/notificationHandler';
 import NetInfo from '@react-native-community/netinfo';
 import { getOfflineReads, addOfflineRead, clearOfflineReads,
   getOfflineArchiveActions,
@@ -307,15 +307,36 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const deleteCollection = async (collectionId: string) => {
     try {
+      console.log(`Deleting collection with ID: ${collectionId}`);
+
       if (isOnline) {
+        console.log('Online: Deleting collection from server');
         await deleteUserCollection(collectionId);
       } else {
+        console.log('Offline: Adding delete action to offline queue');
         const collectionToDelete = collections.find(c => c._id === collectionId);
         if (collectionToDelete) {
           await addOfflineCollectionAction({ type: 'delete', collection: collectionToDelete, timestamp: Date.now() });
         }
       }
-      setCollections(prev => prev.filter(collection => collection._id !== collectionId));
+
+      console.log('Canceling collection notification');
+      await cancelCollectionNotification(collectionId);
+
+      setCollections(prev => {
+        const updatedCollections = prev.filter(collection => collection._id !== collectionId);
+        console.log(`Updated collections count: ${updatedCollections.length}`);
+
+        console.log('Clearing orphaned notifications');
+        clearOrphanedNotifications(updatedCollections.map(c => c._id));
+
+        console.log('Updating offline storage');
+        setOfflineCollections(updatedCollections);
+
+        return updatedCollections;
+      });
+
+      console.log('Collection deletion process completed');
     } catch (error) {
       console.error('Failed to delete collection', error);
     }
@@ -435,19 +456,28 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  const addCollection = async (collection: Omit<Collection, '_id'>) => {
+  const addCollection = async (collection: Omit<Collection, '_id'>): Promise<Collection | null> => {
     try {
+      let newCollection: Collection;
       if (isOnline) {
-        const newCollection = await createCollection(collection);
+        newCollection = await createCollection(collection);
         setCollections(prev => [...prev, newCollection]);
       } else {
         const tempId = `temp_${Date.now()}`;
-        const newCollection = { ...collection, _id: tempId };
+        newCollection = { ...collection, _id: tempId };
         await addOfflineCollectionAction({ type: 'create', collection: newCollection, timestamp: Date.now() });
         setCollections(prev => [...prev, newCollection]);
       }
+
+      if (newCollection.notification_enabled) {
+        console.log('Scheduling notification for new collection:', newCollection);
+        await scheduleCollectionNotification(newCollection);
+      }
+
+      return newCollection;
     } catch (error) {
       console.error('Failed to add collection', error);
+      return null;
     }
   };
 

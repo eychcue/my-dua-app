@@ -36,10 +36,12 @@ export default function CreateCollectionScreen() {
           notification_enabled: notificationEnabled,
         };
 
-        await addCollection(newCollection);
+        // Wait for the collection to be added and capture the returned collection
+        const addedCollection = await addCollection(newCollection);
 
-        if (notificationEnabled && isOnline) {
-          await scheduleCollectionNotification(newCollection);
+        if (notificationEnabled && isOnline && addedCollection) {
+          console.log('Scheduling notification for collection:', addedCollection);
+          await scheduleCollectionNotification(addedCollection);
         }
 
         router.back();
@@ -49,7 +51,6 @@ export default function CreateCollectionScreen() {
       }
     }
   };
-
   const checkNotificationPermissions = async () => {
     const { status } = await Notifications.getPermissionsAsync();
     if (status !== 'granted') {

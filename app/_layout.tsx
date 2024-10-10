@@ -5,15 +5,15 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { useFonts } from 'expo-font';
 import { useRouter, SplashScreen, Stack } from 'expo-router';
 import * as Notifications from 'expo-notifications';
-import { setupNotifications } from '../utils/notificationHandler';
+import { setupNotifications, cancelAllNotifications, clearOrphanedNotifications } from '../utils/notificationHandler';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useColorScheme, View, Text } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { RootSiblingParent } from 'react-native-root-siblings';
-import { DuaProvider } from '@/contexts/DuaContext';
+import { DuaProvider, useDua } from '@/contexts/DuaContext';
 import { getOrCreateUserId } from '@/api';
 import { debounce } from 'lodash';
-import { MenuProvider } from 'react-native-popup-menu';  // Add this import
+import { MenuProvider } from 'react-native-popup-menu';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -30,22 +30,10 @@ export default function RootLayout() {
   });
   const [userId, setUserId] = useState<string | null>(null);
   const [initError, setInitError] = useState<Error | null>(null);
-  const router = useRouter();
-  const notificationListener = useRef<Notifications.Subscription>();
 
   useEffect(() => {
     if (error) throw error;
   }, [error]);
-
-  const handleNotification = useCallback((response: Notifications.NotificationResponse) => {
-    const collectionId = response.notification.request.content.data?.collectionId;
-    if (collectionId) {
-      // Debounce the router push
-      debounce(() => {
-        router.push(`/collection/${collectionId}`);
-      }, 300)();
-    }
-  }, [router]);
 
   useEffect(() => {
     async function initializeApp() {
@@ -55,11 +43,11 @@ export default function RootLayout() {
           setUserId(id);
           await SplashScreen.hideAsync();
 
+          // Clear all notifications when the app starts
+          await cancelAllNotifications();
+
           // Set up notifications
           setupNotifications();
-
-          // Add notification response listener
-          notificationListener.current = Notifications.addNotificationResponseReceivedListener(handleNotification);
         }
       } catch (e) {
         console.error('Failed to initialize app:', e);
@@ -68,14 +56,7 @@ export default function RootLayout() {
       }
     }
     initializeApp();
-
-    // Cleanup function
-    return () => {
-      if (notificationListener.current) {
-        Notifications.removeNotificationSubscription(notificationListener.current);
-      }
-    };
-  }, [loaded, handleNotification]);
+  }, [loaded]);
 
   if (!loaded || (!userId && !initError)) {
     return null;
@@ -96,48 +77,100 @@ function RootLayoutNav({ userId }: { userId: string }) {
   const colorScheme = useColorScheme();
 
   return (
+    <DuaProvider>
+      <InnerLayout colorScheme={colorScheme} />
+    </DuaProvider>
+  );
+}
+
+function InnerLayout({ colorScheme }: { colorScheme: string | null }) {
+  const { collections } = useDua();
+  const router = useRouter();
+  const notificationListener = useRef<Notifications.Subscription>();
+
+  const handleNotification = useCallback((response: Notifications.NotificationResponse) => {
+    const collectionId = response.notification.request.content.data?.collectionId;
+    if (collectionId) {
+      // Check if the collection exists
+      const collectionExists = collections.some(collection => collection._id === collectionId);
+      if (collectionExists) {
+        // Debounce the router push
+        debounce(() => {
+          router.push(`/collection/${collectionId}`);
+        }, 300)();
+      } else {
+        // If the collection doesn't exist, cancel the notification
+        Notifications.cancelScheduledNotificationAsync(response.notification.request.identifier);
+        console.log('Notification cancelled for non-existent collection:', collectionId);
+      }
+    }
+  }, [router, collections]);
+
+  useEffect(() => {
+    const clearOrphans = async () => {
+      const collectionIds = collections.map(c => c._id);
+      await clearOrphanedNotifications(collectionIds);
+    };
+
+    // Clear orphaned notifications immediately when collections change
+    clearOrphans();
+
+    // Set up a periodic check (every 5 minutes)
+    const intervalId = setInterval(clearOrphans, 5 * 60 * 1000);
+
+    // Add notification response listener
+    notificationListener.current = Notifications.addNotificationResponseReceivedListener(handleNotification);
+
+    // Cleanup function
+    return () => {
+      clearInterval(intervalId);
+      if (notificationListener.current) {
+        Notifications.removeNotificationSubscription(notificationListener.current);
+      }
+    };
+  }, [collections, handleNotification]);
+
+  return (
     <View style={{ flex: 1 }}>
       <MenuProvider>
-        <DuaProvider>
-          <GestureHandlerRootView style={{ flex: 1 }}>
-            <RootSiblingParent>
-              <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-                <Stack>
-                  <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                  <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-                  <Stack.Screen
-                    name="collection/[id]"
-                    options={{
-                      presentation: 'modal',
-                      headerShown: false,
-                    }}
-                  />
-                  <Stack.Screen
-                    name="dua/[id]"
-                    options={{
-                      presentation: 'modal',
-                      headerShown: false,
-                    }}
-                  />
-                  <Stack.Screen
-                    name="settings"
-                    options={{
-                      presentation: 'modal',
-                      title: 'Settings',
-                    }}
-                  />
-                  <Stack.Screen
-                    name="archived"
-                    options={{
-                      presentation: 'modal',
-                      headerShown: false,
-                    }}
-                  />
-                </Stack>
-              </ThemeProvider>
-            </RootSiblingParent>
-          </GestureHandlerRootView>
-        </DuaProvider>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <RootSiblingParent>
+            <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+              <Stack>
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+                <Stack.Screen
+                  name="collection/[id]"
+                  options={{
+                    presentation: 'modal',
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen
+                  name="dua/[id]"
+                  options={{
+                    presentation: 'modal',
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen
+                  name="settings"
+                  options={{
+                    presentation: 'modal',
+                    title: 'Settings',
+                  }}
+                />
+                <Stack.Screen
+                  name="archived"
+                  options={{
+                    presentation: 'modal',
+                    headerShown: false,
+                  }}
+                />
+              </Stack>
+            </ThemeProvider>
+          </RootSiblingParent>
+        </GestureHandlerRootView>
       </MenuProvider>
     </View>
   );
