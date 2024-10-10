@@ -383,4 +383,18 @@ export const getUserArchivedDuas = async () => {
   }
 };
 
+export const batchUpdateArchiveStatus = async (actions) => {
+  try {
+    const deviceId = await SecureStore.getItemAsync('deviceId');
+    if (!deviceId) {
+      throw new Error('Device ID not found');
+    }
+    const response = await api.put(`/users/${deviceId}/duas/batch_archive_update`, { actions });
+    return response.data;
+  } catch (error) {
+    console.error('Error batch updating archive status:', error);
+    throw error;
+  }
+};
+
 export default api;

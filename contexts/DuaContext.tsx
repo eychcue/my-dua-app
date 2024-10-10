@@ -16,11 +16,18 @@ import {
   archiveDua,
   unarchiveDua,
   getUserArchivedDuas,
+  batchUpdateArchiveStatus,
 } from '../api';
 import { Dua, Collection } from '../types/dua';
 import { cancelCollectionNotification } from '../utils/notificationHandler';
 import NetInfo from '@react-native-community/netinfo';
-import { getOfflineReads, addOfflineRead, clearOfflineReads } from '../utils/offlineStorage';
+import { getOfflineReads, addOfflineRead, clearOfflineReads,
+  getOfflineArchiveActions,
+  addOfflineArchiveAction,
+  clearOfflineArchiveActions,
+  getOfflineArchivedDuas,
+  setOfflineArchivedDuas,
+ } from '../utils/offlineStorage';
 
 interface DuaContextType {
   duas: Dua[];
@@ -63,6 +70,7 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   useEffect(() => {
     if (isOnline) {
       syncOfflineReads();
+      syncOfflineArchiveActions();
     }
   }, [isOnline]);
 
@@ -81,6 +89,77 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
     } catch (error) {
       console.error('Failed to sync offline reads:', error);
+    }
+  };
+
+  const syncOfflineArchiveActions = async () => {
+    try {
+      const offlineActions = await getOfflineArchiveActions();
+      if (offlineActions.length > 0) {
+        await batchUpdateArchiveStatus(offlineActions);
+        await clearOfflineArchiveActions();
+        // Refresh duas and archived duas
+        await fetchDuas();
+        await fetchArchivedDuas();
+      }
+    } catch (error) {
+      console.error('Failed to sync offline archive actions:', error);
+      // Add more detailed error logging here
+      if (error.response) {
+        console.error('Error response:', error.response.data);
+        console.error('Error status:', error.response.status);
+      }
+    }
+  };
+
+  const archiveDuaHandler = async (duaId: string) => {
+    try {
+      if (isOnline) {
+        await archiveDua(duaId);
+      } else {
+        await addOfflineArchiveAction(duaId, 'archive');
+      }
+      const archivedDua = duas.find(dua => dua._id === duaId);
+      if (archivedDua) {
+        setArchivedDuas(prevArchivedDuas => {
+          const updatedArchivedDuas = [...prevArchivedDuas, archivedDua];
+          // Update local storage
+          setOfflineArchivedDuas(updatedArchivedDuas);
+          return updatedArchivedDuas;
+        });
+        setDuas(prevDuas => prevDuas.filter(dua => dua._id !== duaId));
+      }
+      // Update collections
+      setCollections(prevCollections =>
+        prevCollections.map(collection => ({
+          ...collection,
+          duaIds: collection.duaIds.filter(id => id !== duaId)
+        }))
+      );
+    } catch (error) {
+      console.error('Failed to archive dua', error);
+    }
+  };
+
+  const unarchiveDuaHandler = async (duaId: string) => {
+    try {
+      if (isOnline) {
+        await unarchiveDua(duaId);
+      } else {
+        await addOfflineArchiveAction(duaId, 'unarchive');
+      }
+      const unarchivedDua = archivedDuas.find(dua => dua._id === duaId);
+      if (unarchivedDua) {
+        setDuas(prevDuas => [...prevDuas, unarchivedDua]);
+        setArchivedDuas(prevArchivedDuas => {
+          const updatedArchivedDuas = prevArchivedDuas.filter(dua => dua._id !== duaId);
+          // Update local storage
+          setOfflineArchivedDuas(updatedArchivedDuas);
+          return updatedArchivedDuas;
+        });
+      }
+    } catch (error) {
+      console.error('Failed to unarchive dua', error);
     }
   };
 
@@ -230,43 +309,18 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  const archiveDuaHandler = async (duaId: string) => {
-    try {
-      await archiveDua(duaId);
-      setDuas(prevDuas => prevDuas.filter(dua => dua._id !== duaId));
-      const archivedDua = duas.find(dua => dua._id === duaId);
-      if (archivedDua) {
-        setArchivedDuas(prevArchivedDuas => [...prevArchivedDuas, archivedDua]);
-      }
-      // Update collections
-      setCollections(prevCollections =>
-        prevCollections.map(collection => ({
-          ...collection,
-          duaIds: collection.duaIds.filter(id => id !== duaId)
-        }))
-      );
-    } catch (error) {
-      console.error('Failed to archive dua', error);
-    }
-  };
-
-  const unarchiveDuaHandler = async (duaId: string) => {
-    try {
-      await unarchiveDua(duaId);
-      setArchivedDuas(prevArchivedDuas => prevArchivedDuas.filter(dua => dua._id !== duaId));
-      const unarchivedDua = archivedDuas.find(dua => dua._id === duaId);
-      if (unarchivedDua) {
-        setDuas(prevDuas => [...prevDuas, unarchivedDua]);
-      }
-    } catch (error) {
-      console.error('Failed to unarchive dua', error);
-    }
-  };
-
   const fetchArchivedDuas = async () => {
     try {
-      const fetchedArchivedDuas = await getUserArchivedDuas();
-      setArchivedDuas(fetchedArchivedDuas);
+      if (isOnline) {
+        const fetchedArchivedDuas = await getUserArchivedDuas();
+        setArchivedDuas(fetchedArchivedDuas);
+        // Store fetched archived duas locally for offline access
+        await setOfflineArchivedDuas(fetchedArchivedDuas);
+      } else {
+        // If offline, get archived duas from local storage
+        const offlineArchivedDuas = await getOfflineArchivedDuas();
+        setArchivedDuas(offlineArchivedDuas);
+      }
     } catch (error) {
       console.error('Failed to fetch archived duas', error);
     }
