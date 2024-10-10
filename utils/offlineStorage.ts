@@ -1,5 +1,6 @@
 // utils/offlineStorage.ts
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Dua } from '@/types/dua';
 
 interface OfflineRead {
   duaId: string;
@@ -10,11 +11,66 @@ const OFFLINE_READS_KEY = 'offlineReads';
 const OFFLINE_ARCHIVES_KEY = 'offlineArchives';
 const OFFLINE_UNARCHIVES_KEY = 'offlineUnarchives';
 const OFFLINE_ARCHIVED_DUAS_KEY = 'offlineArchivedDuas'
+const OFFLINE_DELETED_DUAS_KEY = 'offlineDeletedDuas';
+const OFFLINE_DELETION_ACTIONS_KEY = 'offlineDeletionActions';
 
 interface OfflineArchiveAction {
   duaId: string;
   action: 'archive' | 'unarchive';
 }
+
+interface DeletionAction {
+  duaId: string;
+  action: 'delete' | 'undoDelete';
+}
+
+
+export const getOfflineDeletedDuas = async (): Promise<Dua[]> => {
+  try {
+    const jsonValue = await AsyncStorage.getItem(OFFLINE_DELETED_DUAS_KEY);
+    return jsonValue != null ? JSON.parse(jsonValue) : [];
+  } catch (e) {
+    console.error('Error reading offline deleted duas:', e);
+    return [];
+  }
+};
+
+export const setOfflineDeletedDuas = async (duas: Dua[]): Promise<void> => {
+  try {
+    await AsyncStorage.setItem(OFFLINE_DELETED_DUAS_KEY, JSON.stringify(duas));
+  } catch (e) {
+    console.error('Error setting offline deleted duas:', e);
+  }
+};
+
+export const addOfflineDeletionAction = async (action: DeletionAction): Promise<void> => {
+  try {
+    const existingActions = await AsyncStorage.getItem(OFFLINE_DELETION_ACTIONS_KEY);
+    const actions = existingActions ? JSON.parse(existingActions) : [];
+    actions.push(action);
+    await AsyncStorage.setItem(OFFLINE_DELETION_ACTIONS_KEY, JSON.stringify(actions));
+  } catch (e) {
+    console.error('Error adding offline deletion action:', e);
+  }
+};
+
+export const getOfflineDeletionActions = async (): Promise<DeletionAction[]> => {
+  try {
+    const jsonValue = await AsyncStorage.getItem(OFFLINE_DELETION_ACTIONS_KEY);
+    return jsonValue != null ? JSON.parse(jsonValue) : [];
+  } catch (e) {
+    console.error('Error reading offline deletion actions:', e);
+    return [];
+  }
+};
+
+export const clearOfflineDeletionActions = async (): Promise<void> => {
+  try {
+    await AsyncStorage.removeItem(OFFLINE_DELETION_ACTIONS_KEY);
+  } catch (e) {
+    console.error('Error clearing offline deletion actions:', e);
+  }
+};
 
 export const getOfflineArchiveActions = async (): Promise<OfflineArchiveAction[]> => {
   try {

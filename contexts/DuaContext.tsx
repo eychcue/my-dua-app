@@ -17,6 +17,7 @@ import {
   unarchiveDua,
   getUserArchivedDuas,
   batchUpdateArchiveStatus,
+  batchUpdateDeletionStatus,
 } from '../api';
 import { Dua, Collection } from '../types/dua';
 import { cancelCollectionNotification } from '../utils/notificationHandler';
@@ -27,6 +28,11 @@ import { getOfflineReads, addOfflineRead, clearOfflineReads,
   clearOfflineArchiveActions,
   getOfflineArchivedDuas,
   setOfflineArchivedDuas,
+  getOfflineDeletedDuas,
+  setOfflineDeletedDuas,
+  addOfflineDeletionAction,
+  getOfflineDeletionActions,
+  clearOfflineDeletionActions,
  } from '../utils/offlineStorage';
 
 interface DuaContextType {
@@ -58,6 +64,7 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [collections, setCollections] = useState<Collection[]>([]);
   const [readCounts, setReadCounts] = useState<{ [key: string]: number }>({});
   const [isOnline, setIsOnline] = useState(true);
+  const [deletedDuas, setDeletedDuas] = useState<Dua[]>([]);
 
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
@@ -71,6 +78,7 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (isOnline) {
       syncOfflineReads();
       syncOfflineArchiveActions();
+      syncOfflineDeletionActions();
     }
   }, [isOnline]);
 
@@ -111,6 +119,21 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
     }
   };
+
+  const syncOfflineDeletionActions = async () => {
+    try {
+      const offlineActions = await getOfflineDeletionActions();
+      if (offlineActions.length > 0) {
+        await batchUpdateDeletionStatus(offlineActions);
+        await clearOfflineDeletionActions();
+        // Refresh duas
+        await fetchDuas();
+      }
+    } catch (error) {
+      console.error('Failed to sync offline deletion actions:', error);
+    }
+  };
+
 
   const archiveDuaHandler = async (duaId: string) => {
     try {
@@ -252,30 +275,53 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const removeDua = async (duaId: string) => {
     try {
-      await removeDuaFromUser(duaId);
-      setDuas(prevDuas => prevDuas.filter(dua => dua._id !== duaId));
+      const duaToRemove = duas.find(dua => dua._id === duaId);
+      if (!duaToRemove) return;
 
-      // Fetch and update collections after removing dua
-      const updatedCollections = await getUserCollections();
-      setCollections(updatedCollections);
+      if (isOnline) {
+        await removeDuaFromUser(duaId);
+      } else {
+        await addOfflineDeletionAction({ duaId, action: 'delete' });
+      }
+
+      setDuas(prevDuas => prevDuas.filter(dua => dua._id !== duaId));
+      setDeletedDuas(prevDeletedDuas => {
+        const updatedDeletedDuas = [...prevDeletedDuas, duaToRemove];
+        setOfflineDeletedDuas(updatedDeletedDuas);
+        return updatedDeletedDuas;
+      });
+
+      // Update collections
+      setCollections(prevCollections =>
+        prevCollections.map(collection => ({
+          ...collection,
+          duaIds: collection.duaIds.filter(id => id !== duaId)
+        }))
+      );
     } catch (error) {
       console.error('Failed to remove dua', error);
-      // If the API call fails, we should add the dua back to the local state
-      const removedDua = duas.find(dua => dua._id === duaId);
-      if (removedDua) {
-        setDuas(prevDuas => [...prevDuas, removedDua]);
-      }
     }
   };
 
   const undoRemoveDua = async (dua: Dua) => {
     try {
-      await addDuaToUser(dua._id);
+      if (isOnline) {
+        await addDuaToUser(dua._id);
+      } else {
+        await addOfflineDeletionAction({ duaId: dua._id, action: 'undoDelete' });
+      }
+
       setDuas(prevDuas => {
         if (prevDuas.some(d => d._id === dua._id)) {
           return prevDuas; // Dua already exists, don't add it again
         }
         return [...prevDuas, dua];
+      });
+
+      setDeletedDuas(prevDeletedDuas => {
+        const updatedDeletedDuas = prevDeletedDuas.filter(d => d._id !== dua._id);
+        setOfflineDeletedDuas(updatedDeletedDuas);
+        return updatedDeletedDuas;
       });
     } catch (error) {
       console.error('Failed to undo remove dua', error);
@@ -348,6 +394,7 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       removeDua,
       undoRemoveDua,
       archivedDuas,
+      deletedDuas,
       archiveDua: archiveDuaHandler,
       unarchiveDua: unarchiveDuaHandler,
       fetchArchivedDuas,

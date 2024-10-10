@@ -397,4 +397,18 @@ export const batchUpdateArchiveStatus = async (actions) => {
   }
 };
 
+export const batchUpdateDeletionStatus = async (actions) => {
+  try {
+    const deviceId = await SecureStore.getItemAsync('deviceId');
+    if (!deviceId) {
+      throw new Error('Device ID not found');
+    }
+    const response = await api.put(`/users/${deviceId}/duas/batch_deletion_update`, { actions });
+    return response.data;
+  } catch (error) {
+    console.error('Error batch updating deletion status:', error);
+    throw error;
+  }
+};
+
 export default api;
