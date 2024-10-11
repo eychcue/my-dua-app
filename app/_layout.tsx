@@ -5,7 +5,7 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { useFonts } from 'expo-font';
 import { useRouter, SplashScreen, Stack } from 'expo-router';
 import * as Notifications from 'expo-notifications';
-import { setupNotifications } from '../utils/notificationHandler';
+import { setupNotifications, clearOrphanedNotifications } from '../utils/notificationHandler';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useColorScheme, View, Text } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -13,7 +13,8 @@ import { RootSiblingParent } from 'react-native-root-siblings';
 import { DuaProvider } from '@/contexts/DuaContext';
 import { getOrCreateUserId } from '@/api';
 import { debounce } from 'lodash';
-import { MenuProvider } from 'react-native-popup-menu';  // Add this import
+import { MenuProvider } from 'react-native-popup-menu';
+import NetInfo from '@react-native-community/netinfo';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -58,8 +59,26 @@ export default function RootLayout() {
           // Set up notifications
           setupNotifications();
 
+          // Clear orphaned notifications on app start
+          const netInfo = await NetInfo.fetch();
+          await clearOrphanedNotifications(netInfo.isConnected);
+
+          // Set up periodic check for orphaned notifications
+          const intervalId = setInterval(async () => {
+            const currentNetInfo = await NetInfo.fetch();
+            await clearOrphanedNotifications(currentNetInfo.isConnected);
+          }, 5 * 60 * 1000); // Run every 5 minutes
+
           // Add notification response listener
           notificationListener.current = Notifications.addNotificationResponseReceivedListener(handleNotification);
+
+          // Clean up function
+          return () => {
+            if (notificationListener.current) {
+              Notifications.removeNotificationSubscription(notificationListener.current);
+            }
+            clearInterval(intervalId);
+          };
         }
       } catch (e) {
         console.error('Failed to initialize app:', e);
@@ -68,13 +87,6 @@ export default function RootLayout() {
       }
     }
     initializeApp();
-
-    // Cleanup function
-    return () => {
-      if (notificationListener.current) {
-        Notifications.removeNotificationSubscription(notificationListener.current);
-      }
-    };
   }, [loaded, handleNotification]);
 
   if (!loaded || (!userId && !initError)) {
