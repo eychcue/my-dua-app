@@ -33,8 +33,8 @@ export default function CollectionsScreen() {
   const handleDelete = (collection) => {
     setLocalCollections(prevCollections => prevCollections.filter(seq => seq._id !== collection._id));
     setToastMessage('Collection deleted. Tap to undo.');
-    deleteTimeoutRef.current = setTimeout(() => {
-      deleteCollection(collection._id);
+    deleteTimeoutRef.current = setTimeout(async () => {
+      await deleteCollection(collection._id);
       setToastMessage('');
     }, 5000);
   };

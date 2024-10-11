@@ -1,6 +1,8 @@
 // utils/notificationHandler.ts
 import * as Notifications from 'expo-notifications';
 import { Collection } from '../types/dua';
+import { getUserCollections } from '../api';
+import { getOfflineCollections } from './offlineStorage';
 
 export const setupNotifications = () => {
   Notifications.setNotificationHandler({
@@ -45,4 +47,41 @@ export const scheduleCollectionNotification = async (collection: Collection) => 
 
 export const cancelCollectionNotification = async (collectionId: string) => {
   await Notifications.cancelScheduledNotificationAsync(collectionId);
+};
+
+export const clearOrphanedNotifications = async (isOnline: boolean) => {
+  try {
+    // Fetch all collections
+    const collections = isOnline
+      ? await getUserCollections()
+      : await getOfflineCollections();
+
+    // Get all scheduled notifications
+    const scheduledNotifications = await Notifications.getAllScheduledNotificationsAsync();
+
+    // Create a set of valid collection IDs
+    const validCollectionIds = new Set(collections.map(c => c._id));
+
+    // Cancel notifications for non-existent collections
+    for (const notification of scheduledNotifications) {
+      const collectionId = notification.identifier;
+      if (!validCollectionIds.has(collectionId)) {
+        await cancelCollectionNotification(collectionId);
+      }
+    }
+
+    // Schedule notifications for collections that don't have one
+    for (const collection of collections) {
+      if (collection.notification_enabled && collection.scheduled_time) {
+        const hasNotification = scheduledNotifications.some(n => n.identifier === collection._id);
+        if (!hasNotification) {
+          await scheduleCollectionNotification(collection);
+        }
+      }
+    }
+
+    console.log('Orphaned notifications cleared and missing notifications scheduled');
+  } catch (error) {
+    console.error('Error clearing orphaned notifications:', error);
+  }
 };

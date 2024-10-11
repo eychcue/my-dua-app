@@ -309,6 +309,8 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     try {
       if (isOnline) {
         await deleteUserCollection(collectionId);
+        // Cancel the notification for the deleted collection
+        await cancelCollectionNotification(collectionId);
       } else {
         const collectionToDelete = collections.find(c => c._id === collectionId);
         if (collectionToDelete) {
@@ -316,6 +318,9 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
       }
       setCollections(prev => prev.filter(collection => collection._id !== collectionId));
+
+      // Clear orphaned notifications after deletion
+      await clearOrphanedNotifications(isOnline);
     } catch (error) {
       console.error('Failed to delete collection', error);
     }
