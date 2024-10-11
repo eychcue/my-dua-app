@@ -21,7 +21,7 @@ import {
   batchUpdateCollections,
 } from '../api';
 import { Dua, Collection } from '../types/dua';
-import { cancelCollectionNotification } from '../utils/notificationHandler';
+import { cancelCollectionNotification, scheduleCollectionNotification, clearOrphanedNotifications } from '../utils/notificationHandler';
 import NetInfo from '@react-native-community/netinfo';
 import { getOfflineReads, addOfflineRead, clearOfflineReads,
   getOfflineArchiveActions,
@@ -136,6 +136,20 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         console.log('Actions prepared for API:', JSON.stringify(actionsForApi, null, 2));
 
         await batchUpdateCollections(actionsForApi);
+
+        // Handle notifications after batch update
+        for (const action of actionsForApi) {
+          if (action.type === 'delete') {
+            await cancelCollectionNotification(action.collection._id);
+          } else if (action.type === 'create' || action.type === 'update') {
+            if (action.collection.notification_enabled && action.collection.scheduled_time) {
+              await scheduleCollectionNotification(action.collection);
+            } else {
+              await cancelCollectionNotification(action.collection._id);
+            }
+          }
+        }
+
         await clearOfflineCollectionActions();
         await fetchCollections();
       }
@@ -445,11 +459,17 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (isOnline) {
         const newCollection = await createCollection(collection);
         setCollections(prev => [...prev, newCollection]);
+        if (newCollection.notification_enabled && newCollection.scheduled_time) {
+          await scheduleCollectionNotification(newCollection);
+        }
       } else {
         const tempId = `temp_${Date.now()}`;
         const newCollection = { ...collection, _id: tempId };
         await addOfflineCollectionAction({ type: 'create', collection: newCollection, timestamp: Date.now() });
         setCollections(prev => [...prev, newCollection]);
+        if (newCollection.notification_enabled && newCollection.scheduled_time) {
+          await scheduleCollectionNotification(newCollection);
+        }
       }
     } catch (error) {
       console.error('Failed to add collection', error);

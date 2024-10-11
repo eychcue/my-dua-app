@@ -25,7 +25,9 @@ export const scheduleCollectionNotification = async (collection: Collection) => 
     return;
   }
 
-  await cancelCollectionNotification(collection._id);
+  const notificationId = collection._id;
+
+  await cancelCollectionNotification(notificationId);
 
   const trigger = new Date(collection.scheduled_time);
   trigger.setDate(trigger.getDate() + 1);
@@ -41,7 +43,7 @@ export const scheduleCollectionNotification = async (collection: Collection) => 
       minute: trigger.getMinutes(),
       repeats: true,
     },
-    identifier: collection._id,
+    identifier: notificationId,
   });
 };
 
