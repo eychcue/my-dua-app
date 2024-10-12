@@ -59,14 +59,6 @@ export default function EditCollectionScreen() {
 
         await updateCollection(updatedCollection);
 
-        if (isOnline) {
-          if (notificationEnabled) {
-            await cancelCollectionNotification(collection._id);
-            await scheduleCollectionNotification(updatedCollection);
-          } else {
-            await cancelCollectionNotification(collection._id);
-          }
-        }
 
         router.back();
       } catch (error) {

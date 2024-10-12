@@ -257,14 +257,13 @@ export const deleteUserCollection = async (collectionId: string): Promise<void> 
   }
 };
 
-export const updateUserCollection = async (collection: Collection): Promise<Collection> => {
+export const updateUserCollection = async (collection: Collection): Promise<void> => {
   try {
     const deviceId = await SecureStore.getItemAsync('deviceId');
     if (!deviceId) {
       throw new Error('Device ID not found');
     }
-    const response = await api.put(`/users/${deviceId}/collections/${collection._id}`, collection);
-    return response.data;
+    await api.put(`/users/${deviceId}/collections/${collection._id}`, collection);
   } catch (error) {
     console.error('Error updating collection:', error);
     throw error;
@@ -281,7 +280,7 @@ export const markDuaAsRead = async (duaId: string): Promise<number> => {
     return response.data.read_count;
   } catch (error) {
     console.error('Error marking dua as read:', error);
-    throw error;
+    throw error; // Rethrow the error to be caught in the context
   }
 };
 
