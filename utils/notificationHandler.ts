@@ -53,10 +53,19 @@ export const cancelCollectionNotification = async (collectionId: string) => {
 
 export const clearOrphanedNotifications = async (isOnline: boolean) => {
   try {
-    // Fetch all collections
-    const collections = isOnline
-      ? await getUserCollections()
-      : await getOfflineCollections();
+    let collections: Collection[] = [];
+
+    if (isOnline) {
+      try {
+        collections = await getUserCollections();
+      } catch (error) {
+        console.error('Failed to fetch collections from server:', error);
+        // Fallback to offline collections
+        collections = await getOfflineCollections();
+      }
+    } else {
+      collections = await getOfflineCollections();
+    }
 
     // Get all scheduled notifications
     const scheduledNotifications = await Notifications.getAllScheduledNotificationsAsync();

@@ -270,20 +270,28 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const fetchDuas = async () => {
     try {
+      let fetchedDuas = [];
       if (isOnline) {
-        const fetchedDuas = await getUserDuas();
-        setDuas(fetchedDuas);
-        // Store fetched duas locally for offline access
-        await setOfflineDuas(fetchedDuas);
+        try {
+          fetchedDuas = await getUserDuas();
+          setDuas(fetchedDuas);
+          await setOfflineDuas(fetchedDuas);
+        } catch (error) {
+          console.error('Failed to fetch duas from server', error);
+          // Fetch from offline storage if server request fails
+          fetchedDuas = await getOfflineDuas();
+          setDuas(fetchedDuas);
+        }
       } else {
-        // If offline, get duas from local storage
-        const offlineDuas = await getOfflineDuas();
-        setDuas(offlineDuas);
+        fetchedDuas = await getOfflineDuas();
+        setDuas(fetchedDuas);
       }
     } catch (error) {
       console.error('Failed to fetch duas', error);
+      setDuas([]); // Set to empty array if both online and offline fetch fail
     }
   };
+
 
   const addDua = async (dua: Dua) => {
     try {
@@ -302,50 +310,90 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const fetchCollections = useCallback(async () => {
     try {
+      let fetchedCollections = [];
       if (isOnline) {
-        const fetchedCollections = await getUserCollections();
-        const processedCollections = fetchedCollections.map(collection => ({
-          ...collection,
-          _id: collection._id.toString() // Ensure _id is always a string
-        }));
-        setCollections(processedCollections);
-        await setOfflineCollections(processedCollections);
+        try {
+          fetchedCollections = await getUserCollections();
+          const processedCollections = fetchedCollections.map(collection => ({
+            ...collection,
+            _id: collection._id.toString(),
+          }));
+          setCollections(processedCollections);
+          await setOfflineCollections(processedCollections);
+        } catch (error) {
+          console.error('Failed to fetch collections from server', error);
+          // Fetch from offline storage if server request fails
+          fetchedCollections = await getOfflineCollections();
+          setCollections(fetchedCollections);
+        }
       } else {
-        const offlineCollections = await getOfflineCollections();
-        setCollections(offlineCollections);
+        fetchedCollections = await getOfflineCollections();
+        setCollections(fetchedCollections);
       }
     } catch (error) {
       console.error('Failed to fetch collections', error);
+      setCollections([]); // Set to empty array if both online and offline fetch fail
     }
   }, [isOnline]);
+
 
   const deleteCollection = async (collectionId: string) => {
     try {
       if (isOnline) {
-        await deleteUserCollection(collectionId);
-        // Cancel the notification for the deleted collection
-        await cancelCollectionNotification(collectionId);
-      } else {
-        const collectionToDelete = collections.find(c => c._id === collectionId);
-        if (collectionToDelete) {
-          await addOfflineCollectionAction({ type: 'delete', collection: collectionToDelete, timestamp: Date.now() });
+        try {
+          await deleteUserCollection(collectionId);
+          await cancelCollectionNotification(collectionId);
+        } catch (error) {
+          console.error('Failed to delete collection on server:', error);
+          await handleOfflineCollectionDeletion(collectionId);
         }
+      } else {
+        await handleOfflineCollectionDeletion(collectionId);
       }
+
+      // Remove collection from local state
       setCollections(prev => prev.filter(collection => collection._id !== collectionId));
 
       // Clear orphaned notifications after deletion
       await clearOrphanedNotifications(isOnline);
     } catch (error) {
-      console.error('Failed to delete collection', error);
+      console.error('Failed to delete collection:', error);
     }
   };
+
+  const handleOfflineCollectionDeletion = async (collectionId: string) => {
+    const collectionToDelete = collections.find(c => c._id === collectionId);
+    if (collectionToDelete) {
+      await addOfflineCollectionAction({
+        type: 'delete',
+        collection: collectionToDelete,
+        timestamp: Date.now(),
+      });
+
+      // Update offline collections
+      const updatedCollections = collections.filter(collection => collection._id !== collectionId);
+      await setOfflineCollections(updatedCollections);
+
+      // Cancel notification
+      await cancelCollectionNotification(collectionId);
+    }
+  };
+
 
   const markAsRead = useCallback(async (duaId: string) => {
     try {
       if (isOnline) {
-        const updatedCount = await markDuaAsRead(duaId);
-        setReadCounts(prev => ({ ...prev, [duaId]: updatedCount }));
+        try {
+          const updatedCount = await markDuaAsRead(duaId);
+          setReadCounts(prev => ({ ...prev, [duaId]: updatedCount }));
+        } catch (error) {
+          console.error('Failed to mark dua as read on server:', error);
+          // Handle error by updating read count locally
+          await addOfflineRead(duaId);
+          setReadCounts(prev => ({ ...prev, [duaId]: (prev[duaId] || 0) + 1 }));
+        }
       } else {
+        // Offline mode: update read count locally
         await addOfflineRead(duaId);
         setReadCounts(prev => ({ ...prev, [duaId]: (prev[duaId] || 0) + 1 }));
       }
@@ -357,17 +405,26 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const batchMarkAsRead = async (duaIds: string[]) => {
     try {
       if (isOnline) {
-        const updatedCounts = await batchMarkDuasAsRead(duaIds);
-        setReadCounts(prev => ({ ...prev, ...updatedCounts }));
+        try {
+          const updatedCounts = await batchMarkDuasAsRead(duaIds);
+          setReadCounts(prev => ({ ...prev, ...updatedCounts }));
+        } catch (error) {
+          console.error('Failed to batch mark duas as read on server:', error);
+          // Update read counts locally
+          for (const duaId of duaIds) {
+            await addOfflineRead(duaId);
+            setReadCounts(prev => ({ ...prev, [duaId]: (prev[duaId] || 0) + 1 }));
+          }
+        }
       } else {
-        // Handle offline scenario
+        // Offline mode: update read counts locally
         for (const duaId of duaIds) {
           await addOfflineRead(duaId);
           setReadCounts(prev => ({ ...prev, [duaId]: (prev[duaId] || 0) + 1 }));
         }
       }
     } catch (error) {
-      console.error('Failed to batch mark duas as read', error);
+      console.error('Failed to batch mark duas as read:', error);
     }
   };
 
@@ -457,16 +514,54 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const addCollection = async (collection: Omit<Collection, '_id'>) => {
     try {
       if (isOnline) {
-        const newCollection = await createCollection(collection);
-        setCollections(prev => [...prev, newCollection]);
-        if (newCollection.notification_enabled && newCollection.scheduled_time) {
-          await scheduleCollectionNotification(newCollection);
+        try {
+          // Try to create the collection on the server
+          const newCollection = await createCollection(collection);
+          setCollections(prev => [...prev, newCollection]);
+
+          if (newCollection.notification_enabled && newCollection.scheduled_time) {
+            await scheduleCollectionNotification(newCollection);
+          }
+
+          // Update offline storage
+          await setOfflineCollections([...collections, newCollection]);
+        } catch (error) {
+          // If the API call fails, handle it as an offline creation
+          console.error('Failed to add collection to server:', error);
+
+          // Handle the error by creating the collection offline
+          const tempId = `temp_${Date.now()}`;
+          const newCollection = { ...collection, _id: tempId };
+
+          // Add to local state
+          setCollections(prev => [...prev, newCollection]);
+
+          // Store the action to create this collection when back online
+          await addOfflineCollectionAction({ type: 'create', collection: newCollection, timestamp: Date.now() });
+
+          // Update offline storage
+          await setOfflineCollections([...collections, newCollection]);
+
+          // Schedule notification if enabled
+          if (newCollection.notification_enabled && newCollection.scheduled_time) {
+            await scheduleCollectionNotification(newCollection);
+          }
         }
       } else {
+        // Offline creation
         const tempId = `temp_${Date.now()}`;
         const newCollection = { ...collection, _id: tempId };
-        await addOfflineCollectionAction({ type: 'create', collection: newCollection, timestamp: Date.now() });
+
+        // Add to local state
         setCollections(prev => [...prev, newCollection]);
+
+        // Store the action to create this collection when back online
+        await addOfflineCollectionAction({ type: 'create', collection: newCollection, timestamp: Date.now() });
+
+        // Update offline storage
+        await setOfflineCollections([...collections, newCollection]);
+
+        // Schedule notification if enabled
         if (newCollection.notification_enabled && newCollection.scheduled_time) {
           await scheduleCollectionNotification(newCollection);
         }
@@ -479,32 +574,79 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const updateCollection = async (updatedCollection: Collection) => {
     try {
       if (isOnline) {
-        await updateUserCollection(updatedCollection);
+        try {
+          await updateUserCollection(updatedCollection);
+          // Update local state and offline storage
+          setCollections(prev =>
+            prev.map(collection =>
+              collection._id === updatedCollection._id ? updatedCollection : collection
+            )
+          );
+          await setOfflineCollections(
+            collections.map(collection =>
+              collection._id === updatedCollection._id ? updatedCollection : collection
+            )
+          );
+        } catch (error) {
+          console.error('Failed to update collection on server:', error);
+          await handleOfflineCollectionUpdate(updatedCollection);
+        }
       } else {
-        await addOfflineCollectionAction({ type: 'update', collection: updatedCollection, timestamp: Date.now() });
+        await handleOfflineCollectionUpdate(updatedCollection);
       }
-      setCollections(prev =>
-        prev.map(collection => collection._id === updatedCollection._id ? updatedCollection : collection)
-      );
     } catch (error) {
-      console.error('Failed to update collection', error);
+      console.error('Failed to update collection:', error);
     }
   };
 
+  const handleOfflineCollectionUpdate = async (updatedCollection: Collection) => {
+    setCollections(prev =>
+      prev.map(collection =>
+        collection._id === updatedCollection._id ? updatedCollection : collection
+      )
+    );
+
+    await addOfflineCollectionAction({
+      type: 'update',
+      collection: updatedCollection,
+      timestamp: Date.now(),
+    });
+
+    await setOfflineCollections(
+      collections.map(collection =>
+        collection._id === updatedCollection._id ? updatedCollection : collection
+      )
+    );
+
+    if (updatedCollection.notification_enabled && updatedCollection.scheduled_time) {
+      await scheduleCollectionNotification(updatedCollection);
+    } else {
+      await cancelCollectionNotification(updatedCollection._id);
+    }
+  };
+
+
   const fetchArchivedDuas = async () => {
     try {
+      let fetchedArchivedDuas = [];
       if (isOnline) {
-        const fetchedArchivedDuas = await getUserArchivedDuas();
-        setArchivedDuas(fetchedArchivedDuas);
-        // Store fetched archived duas locally for offline access
-        await setOfflineArchivedDuas(fetchedArchivedDuas);
+        try {
+          fetchedArchivedDuas = await getUserArchivedDuas();
+          setArchivedDuas(fetchedArchivedDuas);
+          await setOfflineArchivedDuas(fetchedArchivedDuas);
+        } catch (error) {
+          console.error('Failed to fetch archived duas from server', error);
+          // Fetch from offline storage if server request fails
+          fetchedArchivedDuas = await getOfflineArchivedDuas();
+          setArchivedDuas(fetchedArchivedDuas);
+        }
       } else {
-        // If offline, get archived duas from local storage
-        const offlineArchivedDuas = await getOfflineArchivedDuas();
-        setArchivedDuas(offlineArchivedDuas);
+        fetchedArchivedDuas = await getOfflineArchivedDuas();
+        setArchivedDuas(fetchedArchivedDuas);
       }
     } catch (error) {
       console.error('Failed to fetch archived duas', error);
+      setArchivedDuas([]); // Set to empty array if both online and offline fetch fail
     }
   };
 
