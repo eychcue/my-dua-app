@@ -576,6 +576,7 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (isOnline) {
         try {
           await updateUserCollection(updatedCollection);
+
           // Update local state and offline storage
           setCollections(prev =>
             prev.map(collection =>
@@ -587,6 +588,14 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               collection._id === updatedCollection._id ? updatedCollection : collection
             )
           );
+
+          // Schedule or cancel notification
+          if (updatedCollection.notification_enabled && updatedCollection.scheduled_time) {
+            await scheduleCollectionNotification(updatedCollection);
+          } else {
+            await cancelCollectionNotification(updatedCollection._id);
+          }
+
         } catch (error) {
           console.error('Failed to update collection on server:', error);
           await handleOfflineCollectionUpdate(updatedCollection);

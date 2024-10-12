@@ -38,10 +38,6 @@ export default function CreateCollectionScreen() {
 
         await addCollection(newCollection);
 
-        if (notificationEnabled && isOnline) {
-          await scheduleCollectionNotification(newCollection);
-        }
-
         router.back();
       } catch (error) {
         console.error('Failed to create collection:', error);
