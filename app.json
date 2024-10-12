@@ -1,11 +1,12 @@
 {
   "expo": {
+    "owner": "theoneandonlyhq",
     "name": "my-dua-app",
     "slug": "my-dua-app",
     "version": "1.0.0",
+    "scheme": "myduaapp",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/images/splash.png",
@@ -13,13 +14,15 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.yourcompany.myduaapp"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.yourcompany.myduaapp"
     },
     "web": {
       "bundler": "metro",

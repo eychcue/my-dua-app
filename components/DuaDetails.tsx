@@ -1,7 +1,7 @@
 // File: components/DuaDetails.tsx
 
 import React, { useState, useCallback } from 'react';
-import { StyleSheet, ScrollView, TouchableOpacity, Dimensions, View as RNView } from 'react-native';
+import { StyleSheet, ScrollView, TouchableOpacity, Dimensions, View as RNView, Share } from 'react-native';
 import { Text, View } from '@/components/Themed';
 import { Dua } from '@/types/dua';
 import { useDua } from '@/contexts/DuaContext';
@@ -42,6 +42,28 @@ export default function DuaDetails({ dua, onClose }: Props) {
     }
   };
 
+  const handleShare = async () => {
+    try {
+      const shareUrl = `exp://exp.host/@theoneandonlyhq/my-dua-app?release-channel=default&dua=${dua._id}`;
+      const result = await Share.share({
+        message: `Check out this dua: ${shareUrl}`,
+        url: shareUrl, // This will be used on iOS, ignored on Android
+      });
+
+      if (result.action === Share.sharedAction) {
+        if (result.activityType) {
+          console.log(`Shared via ${result.activityType}`);
+        } else {
+          console.log('Shared successfully');
+        }
+      } else if (result.action === Share.dismissedAction) {
+        console.log('Share dismissed');
+      }
+    } catch (error) {
+      console.error('Error sharing:', error);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <RNView style={styles.header}>
@@ -54,6 +76,7 @@ export default function DuaDetails({ dua, onClose }: Props) {
           </MenuTrigger>
           <MenuOptions>
             <MenuOption onSelect={handleArchive} text="Archive" />
+            <MenuOption onSelect={handleShare} text="Share" />
           </MenuOptions>
         </Menu>
       </RNView>
@@ -151,7 +174,7 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     backgroundColor: '#A5D6A7',
-  },  
+  },
   readButtonText: {
     color: 'white',
     fontSize: 16,

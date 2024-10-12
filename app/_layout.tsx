@@ -15,6 +15,7 @@ import { getOrCreateUserId } from '@/api';
 import { debounce } from 'lodash';
 import { MenuProvider } from 'react-native-popup-menu';
 import NetInfo from '@react-native-community/netinfo';
+import { Linking } from 'react-native';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -35,8 +36,31 @@ export default function RootLayout() {
   const notificationListener = useRef<Notifications.Subscription>();
 
   useEffect(() => {
-    if (error) throw error;
-  }, [error]);
+    const handleDeepLink = (url: string) => {
+      console.log('Received URL:', url); // Add this for debugging
+      const regex = /[?&]dua=([^&]+)/;
+      const match = url.match(regex);
+      if (match && match[1]) {
+        const duaId = match[1];
+        console.log('Navigating to dua:', duaId); // Add this for debugging
+        router.push(`/shared-dua/${duaId}`);
+      }
+    };
+
+    // Handle deep link when the app is already open
+    const subscription = Linking.addEventListener('url', ({ url }) => handleDeepLink(url));
+
+    // Handle deep link when the app is opened from a closed state
+    Linking.getInitialURL().then((url) => {
+      if (url) {
+        handleDeepLink(url);
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [router]);
 
   const handleNotification = useCallback((response: Notifications.NotificationResponse) => {
     const collectionId = response.notification.request.content.data?.collectionId;
