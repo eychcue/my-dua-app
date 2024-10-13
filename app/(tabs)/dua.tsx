@@ -1,12 +1,11 @@
-// app/(tabs)/dua.tsx
+ // File: app/(tabs)/dua.tsx
 
 import React, { useEffect, useRef, useState } from 'react';
-import { StyleSheet, FlatList, RefreshControl, TouchableOpacity, View as RNView } from 'react-native';
+import { StyleSheet, FlatList, RefreshControl, TouchableOpacity, View as RNView, Modal, TouchableWithoutFeedback } from 'react-native';
 import { Text, View } from '@/components/Themed';
-import DuaItem from '@/components/DuaItem';
+import DuaCard from '@/components/DuaCard';
 import { useDua } from '@/contexts/DuaContext';
 import { Dua } from '@/types/dua';
-import { Swipeable } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-root-toast';
 import { useRouter } from 'expo-router';
@@ -18,6 +17,8 @@ export default function DuaScreen() {
   const [deletedDua, setDeletedDua] = useState<{ dua: Dua, index: number } | null>(null);
   const deleteTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const router = useRouter();
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedDua, setSelectedDua] = useState<Dua | null>(null);
 
   useEffect(() => {
     fetchDuas();
@@ -46,6 +47,8 @@ export default function DuaScreen() {
       setToastMessage('');
       setDeletedDua(null);
     }, 5000);
+
+    setModalVisible(false);
   };
 
   const handleArchive = async (dua: Dua) => {
@@ -57,6 +60,7 @@ export default function DuaScreen() {
       console.error('Error archiving dua:', error);
       setToastMessage('Failed to archive dua');
     }
+    setModalVisible(false);
   };
 
   const handleUndo = () => {
@@ -77,25 +81,26 @@ export default function DuaScreen() {
     setToastMessage('');
   };
 
-  const renderRightActions = (dua: Dua) => (
-    <RNView style={styles.rightActions}>
-      <TouchableOpacity style={styles.archiveButton} onPress={() => handleArchive(dua)}>
-        <Ionicons name="archive-outline" size={24} color="white" />
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.deleteButton} onPress={() => handleDelete(dua)}>
-        <Ionicons name="trash-outline" size={24} color="white" />
-      </TouchableOpacity>
-    </RNView>
-  );
-
   const handleDuaPress = (dua: Dua) => {
     router.push(`/dua/${dua._id}`);
   };
 
+  const handleOptionsPress = (dua: Dua) => {
+    setSelectedDua(dua);
+    setModalVisible(true);
+  };
+
+  const closeModal = () => {
+    setModalVisible(false);
+    setSelectedDua(null);
+  };
+
   const renderDuaItem = ({ item }: { item: Dua }) => (
-    <Swipeable renderRightActions={() => renderRightActions(item)}>
-      <DuaItem dua={item} onPress={() => handleDuaPress(item)} />
-    </Swipeable>
+    <DuaCard
+      dua={item}
+      onPress={() => handleDuaPress(item)}
+      onOptionsPress={() => handleOptionsPress(item)}
+    />
   );
 
   return (
@@ -110,6 +115,40 @@ export default function DuaScreen() {
           <RefreshControl refreshing={false} onRefresh={handleRefresh} />
         }
       />
+      <Modal
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={closeModal}
+      >
+        <TouchableWithoutFeedback onPress={closeModal}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback>
+              <View style={styles.modalView}>
+                <TouchableOpacity
+                  style={styles.modalOption}
+                  onPress={() => selectedDua && handleArchive(selectedDua)}
+                >
+                  <Ionicons name="archive-outline" size={24} color="#4B5563" />
+                  <Text style={styles.modalOptionText}>Archive</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.modalOption}
+                  onPress={() => selectedDua && handleDelete(selectedDua)}
+                >
+                  <Ionicons name="trash-outline" size={24} color="#EF4444" />
+                  <Text style={styles.modalOptionText}>Delete</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalOption, styles.cancelButton]}
+                  onPress={closeModal}
+                >
+                  <Text style={[styles.modalOptionText, styles.cancelButtonText]}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
       {toastMessage && (
         <Toast
           visible={!!toastMessage}
@@ -134,6 +173,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
+    backgroundColor: '#F3F4F6',
   },
   title: {
     fontSize: 24,
@@ -143,24 +183,49 @@ const styles = StyleSheet.create({
   listContent: {
     paddingBottom: 20,
   },
-  rightActions: {
-    flexDirection: 'row',
-  },
-  archiveButton: {
-    backgroundColor: 'orange',
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: 80,
-    height: '100%',
-  },
-  deleteButton: {
-    backgroundColor: 'red',
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: 80,
-    height: '100%',
-  },
   toastText: {
     color: 'white',
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalView: {
+    backgroundColor: 'white',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    alignItems: 'stretch',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5
+  },
+  modalOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  modalOptionText: {
+    marginLeft: 15,
+    fontSize: 16,
+    color: '#1F2937',
+  },
+  cancelButton: {
+    justifyContent: 'center',
+    borderBottomWidth: 0,
+    marginTop: 10,
+  },
+  cancelButtonText: {
+    color: '#3B82F6',
+    fontWeight: 'bold',
+    marginLeft: 0,
   },
 });
