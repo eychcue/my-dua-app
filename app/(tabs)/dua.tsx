@@ -1,4 +1,4 @@
-// app/(tabs)/dua.tsx
+ // File: app/(tabs)/dua.tsx
 
 import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, FlatList, RefreshControl, TouchableOpacity, View as RNView, Modal, TouchableWithoutFeedback } from 'react-native';
