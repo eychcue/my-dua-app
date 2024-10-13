@@ -2,6 +2,8 @@
 
 import React from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { Ionicons } from '@expo/vector-icons';
+import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Tabs } from 'expo-router';
 import { TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -24,16 +26,15 @@ export default function TabLayout() {
     router.push('/settings');
   };
 
+  const createNewCollection = () => {
+    router.push('/create-collection');
+  };
+
   return (
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
         headerShown: useClientOnlyValue(false, true),
-        headerRight: () => (
-          <TouchableOpacity onPress={openSettings} style={{ marginRight: 15 }}>
-            <FontAwesome name="cog" size={24} color={Colors[colorScheme ?? 'light'].text} />
-          </TouchableOpacity>
-        ),
       }}
     >
       <Tabs.Screen
@@ -47,6 +48,11 @@ export default function TabLayout() {
         options={{
           title: 'Duas',
           tabBarIcon: ({ color }) => <TabBarIcon name="book" color={color} />,
+          headerRight: () => (
+            <TouchableOpacity onPress={openSettings} style={{ marginRight: 15 }}>
+              <FontAwesome name="cog" size={24} color={Colors[colorScheme ?? 'light'].text} />
+            </TouchableOpacity>
+          ),
         }}
       />
       <Tabs.Screen
@@ -54,6 +60,11 @@ export default function TabLayout() {
         options={{
           title: 'Create',
           tabBarIcon: ({ color }) => <TabBarIcon name="plus" color={color} />,
+          headerRight: () => (
+            <TouchableOpacity onPress={openSettings} style={{ marginRight: 15 }}>
+              <FontAwesome name="cog" size={24} color={Colors[colorScheme ?? 'light'].text} />
+            </TouchableOpacity>
+          ),
         }}
       />
       <Tabs.Screen
@@ -61,6 +72,11 @@ export default function TabLayout() {
         options={{
           title: 'Collection',
           tabBarIcon: ({ color }) => <TabBarIcon name="list" color={color} />,
+          headerRight: () => (
+            <TouchableOpacity onPress={createNewCollection} style={{ marginRight: 15 }}>
+              <Ionicons name="add" size={28} color={Colors[colorScheme ?? 'light'].text} />
+            </TouchableOpacity>
+          ),
         }}
       />
     </Tabs>
