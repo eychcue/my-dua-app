@@ -114,7 +114,6 @@ export default function CollectionsScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>My Collections</Text>
       <FlatList
         data={localCollections}
         renderItem={renderCollectionItem}
@@ -125,13 +124,6 @@ export default function CollectionsScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       />
-      <TouchableOpacity
-        style={styles.createButton}
-        onPress={() => router.push('/create-collection')}
-      >
-        <Ionicons name="add-circle" size={24} color="white" />
-        <Text style={styles.createButtonText}>Create New Collection</Text>
-      </TouchableOpacity>
       <Modal
         transparent={true}
         visible={modalVisible}
@@ -192,13 +184,8 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: '#F3F4F6',
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-  },
   listContent: {
-    paddingBottom: 80,
+    paddingBottom: 20,
   },
   collectionItem: {
     width: ITEM_WIDTH,
@@ -255,24 +242,6 @@ const styles = StyleSheet.create({
     bottom: 8,
     right: 8,
     padding: 4,
-  },
-  createButton: {
-    position: 'absolute',
-    bottom: 20,
-    left: 20,
-    right: 20,
-    backgroundColor: 'blue',
-    padding: 15,
-    borderRadius: 5,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  createButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginLeft: 8,
   },
   modalOverlay: {
     flex: 1,
