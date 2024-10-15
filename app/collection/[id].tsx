@@ -1,12 +1,12 @@
 // File: app/collection/[id].tsx
 import React, { useRef, useState, useCallback, useEffect } from 'react';
-import { StyleSheet, Dimensions, Text, FlatList, View as RNView, TouchableOpacity } from 'react-native';
+import { StyleSheet, Dimensions, FlatList, View as RNView } from 'react-native';
+import { Text } from '@/components/Themed';
 import { useDua } from '@/contexts/DuaContext';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import DuaDetails from '@/components/DuaDetails';
-import { Ionicons } from '@expo/vector-icons';
+import CollectionDuaDetails from '@/components/CollectionDuaDetails';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function CollectionViewerScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -59,16 +59,18 @@ export default function CollectionViewerScreen() {
 
   return (
     <RNView style={styles.container}>
-      <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
-        <Ionicons name="close" size={24} color="black" />
-      </TouchableOpacity>
       <FlatList
         ref={flatListRef}
         data={collectionDuas}
-        renderItem={({ item }) => (
-          <RNView style={styles.duaContainer}>
-            <DuaDetails dua={item} onRead={handleDuaRead} />
-          </RNView>
+        renderItem={({ item, index }) => (
+          <CollectionDuaDetails
+            dua={item}
+            onRead={handleDuaRead}
+            currentIndex={index}
+            totalDuas={collectionDuas.length}
+            collectionName={collection.name}
+            onClose={handleClose}
+          />
         )}
         keyExtractor={(item) => item._id}
         horizontal
@@ -83,9 +85,6 @@ export default function CollectionViewerScreen() {
         snapToInterval={SCREEN_WIDTH}
         snapToAlignment="center"
       />
-      <RNView style={styles.pagination}>
-        <Text style={styles.paginationText}>{`${currentIndex + 1} / ${collectionDuas.length}`}</Text>
-      </RNView>
     </RNView>
   );
 }
@@ -94,32 +93,5 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
-  },
-  duaContainer: {
-    width: SCREEN_WIDTH,
-    height: SCREEN_HEIGHT,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  pagination: {
-    position: 'absolute',
-    bottom: 20,
-    left: 0,
-    right: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'transparent',
-  },
-  paginationText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  closeButton: {
-    position: 'absolute',
-    top: 40,
-    right: 20,
-    zIndex: 10,
-    padding: 10,
   },
 });
