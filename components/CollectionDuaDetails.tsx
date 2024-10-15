@@ -1,18 +1,16 @@
-// File: components/DuaDetails.tsx
-
 import React, { useState, useCallback } from 'react';
 import {
   StyleSheet,
   TouchableOpacity,
+  Share,
+  View as RNView,
+  ScrollView,
   Dimensions,
   Modal,
   TouchableWithoutFeedback,
-  Share,
-  SafeAreaView,
-  View as RNView,
 } from 'react-native';
 import { Text, View } from '@/components/Themed';
-import { Dua } from '@/types/dua';
+import { Dua, Collection } from '@/types/dua';
 import { useDua } from '@/contexts/DuaContext';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
@@ -20,11 +18,26 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 type Props = {
   dua: Dua;
+  onRead: () => void;
+  currentIndex: number;
+  totalDuas: number;
+  collection: Collection;
   onClose: () => void;
+  onEditCollection: (collection: Collection) => void;
+  onDeleteCollection: (collectionId: string) => void;
 };
 
-export default function DuaDetails({ dua, onClose }: Props) {
-  const { markAsRead, readCounts, archiveDua, removeDua, isOnline } = useDua();
+export default function CollectionDuaDetails({
+  dua,
+  onRead,
+  currentIndex,
+  totalDuas,
+  collection,
+  onClose,
+  onEditCollection,
+  onDeleteCollection
+}: Props) {
+  const { markAsRead, readCounts, isOnline } = useDua();
   const [showOfflineIndicator, setShowOfflineIndicator] = useState(false);
   const [isMarkingAsRead, setIsMarkingAsRead] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
@@ -38,31 +51,8 @@ export default function DuaDetails({ dua, onClose }: Props) {
       setTimeout(() => setShowOfflineIndicator(false), 2000);
     }
     setIsMarkingAsRead(false);
-  }, [dua._id, markAsRead, isOnline, isMarkingAsRead]);
-
-  const handleArchive = async () => {
-    if (isOnline) {
-      await archiveDua(dua._id);
-      onClose();
-    } else {
-      alert("Archiving is not available offline. Please try again when you're back online.");
-    }
-    setModalVisible(false);
-  };
-
-  const handleDelete = async () => {
-    if (isOnline) {
-      await removeDua(dua._id);
-      onClose();
-    } else {
-      alert("Deleting is not available offline. Please try again when you're back online.");
-    }
-    setModalVisible(false);
-  };
-
-  const toggleModal = () => {
-    setModalVisible(!modalVisible);
-  };
+    onRead();
+  }, [dua._id, markAsRead, isOnline, isMarkingAsRead, onRead]);
 
   const handleShare = async () => {
     try {
@@ -74,25 +64,48 @@ export default function DuaDetails({ dua, onClose }: Props) {
     }
   };
 
+  const handleOptions = () => {
+    setModalVisible(true);
+  };
+
+  const handleEditCollection = () => {
+    setModalVisible(false);
+    onEditCollection(collection);
+  };
+
+  const handleDeleteCollection = () => {
+    setModalVisible(false);
+    onDeleteCollection(collection._id);
+  };
+
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={toggleModal}>
+    <RNView style={styles.container}>
+      <RNView style={styles.header}>
+        <TouchableOpacity onPress={handleOptions} style={styles.headerButton}>
           <MaterialCommunityIcons name="dots-horizontal" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle} numberOfLines={1}>{dua.title}</Text>
-        <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+        <Text style={styles.headerTitle}>{collection.name}</Text>
+        <TouchableOpacity onPress={onClose} style={styles.headerButton}>
           <Ionicons name="close" size={24} color="#333" />
         </TouchableOpacity>
-      </View>
+      </RNView>
 
-      <View style={styles.contentContainer}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <RNView style={styles.progressContainer}>
+          <Text style={styles.progressText}>{`${currentIndex + 1}/${totalDuas}`}</Text>
+          <RNView style={styles.progressBar}>
+            <RNView style={[styles.progressFill, { width: `${((currentIndex + 1) / totalDuas) * 100}%` }]} />
+          </RNView>
+        </RNView>
+
+        <Text style={styles.title}>{dua.title}</Text>
+
         <View style={styles.duaCard}>
           <Text style={styles.arabic}>{dua.arabic}</Text>
           <Text style={styles.transliteration}>{dua.transliteration}</Text>
           <Text style={styles.translation}>{dua.translation}</Text>
         </View>
-      </View>
+      </ScrollView>
 
       <View style={styles.footer}>
         <View style={styles.actionSection}>
@@ -126,30 +139,30 @@ export default function DuaDetails({ dua, onClose }: Props) {
       <Modal
         transparent={true}
         visible={modalVisible}
-        onRequestClose={toggleModal}
+        onRequestClose={() => setModalVisible(false)}
         animationType="none"
       >
-        <TouchableWithoutFeedback onPress={toggleModal}>
+        <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
           <RNView style={styles.modalOverlay}>
             <TouchableWithoutFeedback>
               <View style={styles.modalView}>
                 <TouchableOpacity
                   style={styles.modalOption}
-                  onPress={handleArchive}
+                  onPress={handleEditCollection}
                 >
-                  <Ionicons name="archive-outline" size={24} color="#4B5563" />
-                  <Text style={styles.modalOptionText}>Archive</Text>
+                  <Ionicons name="pencil-outline" size={24} color="#4B5563" />
+                  <Text style={styles.modalOptionText}>Edit Collection</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.modalOption}
-                  onPress={handleDelete}
+                  onPress={handleDeleteCollection}
                 >
                   <Ionicons name="trash-outline" size={24} color="#EF4444" />
-                  <Text style={styles.modalOptionText}>Delete</Text>
+                  <Text style={styles.modalOptionText}>Delete Collection</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.modalOption, styles.cancelButton]}
-                  onPress={toggleModal}
+                  onPress={() => setModalVisible(false)}
                 >
                   <Text style={[styles.modalOptionText, styles.cancelButtonText]}>Cancel</Text>
                 </TouchableOpacity>
@@ -158,7 +171,7 @@ export default function DuaDetails({ dua, onClose }: Props) {
           </RNView>
         </TouchableWithoutFeedback>
       </Modal>
-    </SafeAreaView>
+    </RNView>
   );
 }
 
@@ -166,38 +179,59 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+    width: SCREEN_WIDTH,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: 'white',
+    paddingTop: 40,
+    paddingBottom: 20,
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: '#E5E7EB',
+  },
+  headerButton: {
+    padding: 5,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
-    flex: 1,
-    textAlign: 'center',
-    marginHorizontal: 10,
   },
-  closeButton: {
-    padding: 10,
+  scrollContent: {
+    flexGrow: 1,
+    padding: 20,
   },
-  contentContainer: {
-    flex: 1,
-    justifyContent: 'center',
+  progressContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 20, // Add some vertical padding
+    marginBottom: 15,
+  },
+  progressText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginRight: 10,
+  },
+  progressBar: {
+    flex: 1,
+    height: 4,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 2,
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#4CAF50',
+    borderRadius: 2,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 20,
   },
   duaCard: {
-    flex: 1, // Make the card fill available space
-    width: '100%',
     backgroundColor: 'white',
     borderRadius: 20,
     padding: 25,
@@ -209,7 +243,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
-    justifyContent: 'center', // Center content vertically
   },
   arabic: {
     fontSize: 28,

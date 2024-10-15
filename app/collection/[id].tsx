@@ -1,16 +1,16 @@
 // File: app/collection/[id].tsx
 import React, { useRef, useState, useCallback, useEffect } from 'react';
-import { StyleSheet, Dimensions, Text, FlatList, View as RNView, TouchableOpacity } from 'react-native';
+import { StyleSheet, Dimensions, FlatList, View as RNView, Alert } from 'react-native';
+import { Text } from '@/components/Themed';
 import { useDua } from '@/contexts/DuaContext';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import DuaDetails from '@/components/DuaDetails';
-import { Ionicons } from '@expo/vector-icons';
+import CollectionDuaDetails from '@/components/CollectionDuaDetails';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function CollectionViewerScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { duas, collections, batchMarkAsRead } = useDua();
+  const { duas, collections, batchMarkAsRead, deleteCollection } = useDua();
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
   const router = useRouter();
@@ -49,6 +49,41 @@ export default function CollectionViewerScreen() {
     router.back();
   };
 
+  const handleEditCollection = (collectionToEdit: Collection) => {
+    // Close the current modal view and navigate to the edit collection screen
+    router.back();
+    router.push({
+      pathname: '/edit-collection',
+      params: { collectionId: collectionToEdit._id }
+    });
+  };
+
+  const handleDeleteCollection = (collectionId: string) => {
+    Alert.alert(
+      "Delete Collection",
+      "Are you sure you want to delete this collection?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "Delete",
+          onPress: async () => {
+            try {
+              await deleteCollection(collectionId);
+              router.back(); // Close the collection viewer
+            } catch (error) {
+              console.error('Failed to delete collection:', error);
+              Alert.alert('Error', 'Failed to delete collection. Please try again.');
+            }
+          },
+          style: "destructive"
+        }
+      ]
+    );
+  };
+
   if (!collection) {
     return <Text>Collection not found</Text>;
   }
@@ -59,16 +94,20 @@ export default function CollectionViewerScreen() {
 
   return (
     <RNView style={styles.container}>
-      <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
-        <Ionicons name="close" size={24} color="black" />
-      </TouchableOpacity>
       <FlatList
         ref={flatListRef}
         data={collectionDuas}
-        renderItem={({ item }) => (
-          <RNView style={styles.duaContainer}>
-            <DuaDetails dua={item} onRead={handleDuaRead} />
-          </RNView>
+        renderItem={({ item, index }) => (
+          <CollectionDuaDetails
+            dua={item}
+            onRead={handleDuaRead}
+            currentIndex={index}
+            totalDuas={collectionDuas.length}
+            collection={collection}
+            onClose={handleClose}
+            onEditCollection={handleEditCollection}
+            onDeleteCollection={handleDeleteCollection}
+          />
         )}
         keyExtractor={(item) => item._id}
         horizontal
@@ -83,9 +122,6 @@ export default function CollectionViewerScreen() {
         snapToInterval={SCREEN_WIDTH}
         snapToAlignment="center"
       />
-      <RNView style={styles.pagination}>
-        <Text style={styles.paginationText}>{`${currentIndex + 1} / ${collectionDuas.length}`}</Text>
-      </RNView>
     </RNView>
   );
 }
@@ -94,32 +130,5 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
-  },
-  duaContainer: {
-    width: SCREEN_WIDTH,
-    height: SCREEN_HEIGHT,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  pagination: {
-    position: 'absolute',
-    bottom: 20,
-    left: 0,
-    right: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'transparent',
-  },
-  paginationText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  closeButton: {
-    position: 'absolute',
-    top: 40,
-    right: 20,
-    zIndex: 10,
-    padding: 10,
   },
 });
