@@ -10,7 +10,7 @@ import {
   TouchableWithoutFeedback,
 } from 'react-native';
 import { Text, View } from '@/components/Themed';
-import { Dua } from '@/types/dua';
+import { Dua, Collection } from '@/types/dua';
 import { useDua } from '@/contexts/DuaContext';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
@@ -21,12 +21,23 @@ type Props = {
   onRead: () => void;
   currentIndex: number;
   totalDuas: number;
-  collectionName: string;
+  collection: Collection;
   onClose: () => void;
+  onEditCollection: (collection: Collection) => void;
+  onDeleteCollection: (collectionId: string) => void;
 };
 
-export default function CollectionDuaDetails({ dua, onRead, currentIndex, totalDuas, collectionName, onClose }: Props) {
-  const { markAsRead, readCounts, isOnline, archiveDua, removeDua } = useDua();
+export default function CollectionDuaDetails({
+  dua,
+  onRead,
+  currentIndex,
+  totalDuas,
+  collection,
+  onClose,
+  onEditCollection,
+  onDeleteCollection
+}: Props) {
+  const { markAsRead, readCounts, isOnline } = useDua();
   const [showOfflineIndicator, setShowOfflineIndicator] = useState(false);
   const [isMarkingAsRead, setIsMarkingAsRead] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
@@ -57,26 +68,14 @@ export default function CollectionDuaDetails({ dua, onRead, currentIndex, totalD
     setModalVisible(true);
   };
 
-  const handleArchive = async () => {
-    try {
-      await archiveDua(dua._id);
-      setModalVisible(false);
-      onClose(); // Close the dua view after archiving
-    } catch (error) {
-      console.error('Error archiving dua:', error);
-      alert('Failed to archive dua. Please try again.');
-    }
+  const handleEditCollection = () => {
+    setModalVisible(false);
+    onEditCollection(collection);
   };
 
-  const handleDelete = async () => {
-    try {
-      await removeDua(dua._id);
-      setModalVisible(false);
-      onClose(); // Close the dua view after deleting
-    } catch (error) {
-      console.error('Error deleting dua:', error);
-      alert('Failed to delete dua. Please try again.');
-    }
+  const handleDeleteCollection = () => {
+    setModalVisible(false);
+    onDeleteCollection(collection._id);
   };
 
   return (
@@ -85,7 +84,7 @@ export default function CollectionDuaDetails({ dua, onRead, currentIndex, totalD
         <TouchableOpacity onPress={handleOptions} style={styles.headerButton}>
           <MaterialCommunityIcons name="dots-horizontal" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{collectionName}</Text>
+        <Text style={styles.headerTitle}>{collection.name}</Text>
         <TouchableOpacity onPress={onClose} style={styles.headerButton}>
           <Ionicons name="close" size={24} color="#333" />
         </TouchableOpacity>
@@ -149,17 +148,17 @@ export default function CollectionDuaDetails({ dua, onRead, currentIndex, totalD
               <View style={styles.modalView}>
                 <TouchableOpacity
                   style={styles.modalOption}
-                  onPress={handleArchive}
+                  onPress={handleEditCollection}
                 >
-                  <Ionicons name="archive-outline" size={24} color="#4B5563" />
-                  <Text style={styles.modalOptionText}>Archive</Text>
+                  <Ionicons name="pencil-outline" size={24} color="#4B5563" />
+                  <Text style={styles.modalOptionText}>Edit Collection</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.modalOption}
-                  onPress={handleDelete}
+                  onPress={handleDeleteCollection}
                 >
                   <Ionicons name="trash-outline" size={24} color="#EF4444" />
-                  <Text style={styles.modalOptionText}>Delete</Text>
+                  <Text style={styles.modalOptionText}>Delete Collection</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.modalOption, styles.cancelButton]}

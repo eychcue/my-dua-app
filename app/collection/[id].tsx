@@ -1,6 +1,6 @@
 // File: app/collection/[id].tsx
 import React, { useRef, useState, useCallback, useEffect } from 'react';
-import { StyleSheet, Dimensions, FlatList, View as RNView } from 'react-native';
+import { StyleSheet, Dimensions, FlatList, View as RNView, Alert } from 'react-native';
 import { Text } from '@/components/Themed';
 import { useDua } from '@/contexts/DuaContext';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -10,7 +10,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function CollectionViewerScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { duas, collections, batchMarkAsRead } = useDua();
+  const { duas, collections, batchMarkAsRead, deleteCollection } = useDua();
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
   const router = useRouter();
@@ -49,6 +49,41 @@ export default function CollectionViewerScreen() {
     router.back();
   };
 
+  const handleEditCollection = (collectionToEdit: Collection) => {
+    // Close the current modal view and navigate to the edit collection screen
+    router.back();
+    router.push({
+      pathname: '/edit-collection',
+      params: { collectionId: collectionToEdit._id }
+    });
+  };
+
+  const handleDeleteCollection = (collectionId: string) => {
+    Alert.alert(
+      "Delete Collection",
+      "Are you sure you want to delete this collection?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "Delete",
+          onPress: async () => {
+            try {
+              await deleteCollection(collectionId);
+              router.back(); // Close the collection viewer
+            } catch (error) {
+              console.error('Failed to delete collection:', error);
+              Alert.alert('Error', 'Failed to delete collection. Please try again.');
+            }
+          },
+          style: "destructive"
+        }
+      ]
+    );
+  };
+
   if (!collection) {
     return <Text>Collection not found</Text>;
   }
@@ -68,8 +103,10 @@ export default function CollectionViewerScreen() {
             onRead={handleDuaRead}
             currentIndex={index}
             totalDuas={collectionDuas.length}
-            collectionName={collection.name}
+            collection={collection}
             onClose={handleClose}
+            onEditCollection={handleEditCollection}
+            onDeleteCollection={handleDeleteCollection}
           />
         )}
         keyExtractor={(item) => item._id}
