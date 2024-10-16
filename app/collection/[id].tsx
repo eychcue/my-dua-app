@@ -1,8 +1,8 @@
 // File: app/collection/[id].tsx
 
 import React, { useRef, useState, useCallback, useEffect } from 'react';
-import { StyleSheet, Dimensions, FlatList, View as RNView, Alert } from 'react-native';
-import { Text, View } from '@/components/Themed';
+import { StyleSheet, Dimensions, FlatList, View } from 'react-native';
+import { Text } from '@/components/Themed';
 import { useDua } from '@/contexts/DuaContext';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import CollectionDuaDetails from '@/components/CollectionDuaDetails';
@@ -99,6 +99,8 @@ export default function CollectionViewerScreen() {
           headerShown: false,
           presentation: 'modal',
           animation: 'slide_from_bottom',
+          gestureEnabled: true,
+          gestureDirection: 'vertical',
         }}
       />
       <FlatList
