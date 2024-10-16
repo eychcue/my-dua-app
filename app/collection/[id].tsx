@@ -1,7 +1,7 @@
 // File: app/collection/[id].tsx
 
 import React, { useRef, useState, useCallback, useEffect } from 'react';
-import { StyleSheet, Dimensions, FlatList, View } from 'react-native';
+import { StyleSheet, Dimensions, FlatList, View, Alert } from 'react-native';
 import { Text } from '@/components/Themed';
 import { useDua } from '@/contexts/DuaContext';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
