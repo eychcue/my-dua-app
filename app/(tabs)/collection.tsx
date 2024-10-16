@@ -69,15 +69,6 @@ export default function CollectionsScreen() {
     setModalVisible(false);
   };
 
-  const handleUndo = () => {
-    if (deleteTimeoutRef.current) {
-      clearTimeout(deleteTimeoutRef.current);
-      deleteTimeoutRef.current = null;
-    }
-    fetchCollections();
-    setToastMessage('');
-  };
-
   const handleEdit = (collection) => {
     router.push({
       pathname: '/edit-collection',
@@ -177,22 +168,6 @@ export default function CollectionsScreen() {
           </View>
         </TouchableOpacity>
       </Modal>
-      {toastMessage ? (
-        <Toast
-          visible={!!toastMessage}
-          position={Toast.positions.BOTTOM}
-          shadow={false}
-          animation={false}
-          hideOnPress={false}
-          duration={5000}
-          onHidden={() => setToastMessage('')}
-          onPress={handleUndo}
-        >
-          <TouchableOpacity onPress={handleUndo} style={styles.toastContainer}>
-            <Text style={styles.toastText}>{toastMessage}</Text>
-          </TouchableOpacity>
-        </Toast>
-      ) : null}
     </View>
   );
 }

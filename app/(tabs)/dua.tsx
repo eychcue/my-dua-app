@@ -73,24 +73,6 @@ export default function DuaScreen() {
     setModalVisible(false);
   };
 
-  const handleUndo = () => {
-    if (deleteTimeoutRef.current) {
-      clearTimeout(deleteTimeoutRef.current);
-      deleteTimeoutRef.current = null;
-    }
-
-    if (deletedDua) {
-      setLocalDuas(prevDuas => {
-        const newDuas = [...prevDuas];
-        newDuas.splice(deletedDua.index, 0, deletedDua.dua);
-        return newDuas;
-      });
-      setDeletedDua(null);
-    }
-
-    setToastMessage('');
-  };
-
   const handleDuaPress = (dua: Dua) => {
     router.push(`/dua/${dua._id}`);
   };
@@ -159,22 +141,6 @@ export default function DuaScreen() {
           </View>
         </TouchableWithoutFeedback>
       </Modal>
-      {toastMessage && (
-        <Toast
-          visible={!!toastMessage}
-          position={Toast.positions.BOTTOM}
-          shadow={false}
-          animation={false}
-          hideOnPress={false}
-          duration={5000}
-          onHidden={() => setToastMessage('')}
-          onPress={handleUndo}
-        >
-          <TouchableOpacity onPress={handleUndo}>
-            <Text style={styles.toastText}>{toastMessage}</Text>
-          </TouchableOpacity>
-        </Toast>
-      )}
     </View>
   );
 }
