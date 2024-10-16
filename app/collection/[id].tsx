@@ -58,7 +58,7 @@ export default function CollectionViewerScreen() {
     });
   };
 
-  const handleDeleteCollection = (collectionId: string) => {
+  const handleDeleteCollection = (collection: Collection) => {
     Alert.alert(
       "Delete Collection",
       "Are you sure you want to delete this collection?",
@@ -71,11 +71,14 @@ export default function CollectionViewerScreen() {
           text: "Delete",
           onPress: async () => {
             try {
-              await deleteCollection(collectionId);
+              setLocalCollections(prevCollections => prevCollections.filter(seq => seq._id !== collection._id));
+              await deleteCollection(collection._id);
               router.back();
             } catch (error) {
               console.error('Failed to delete collection:', error);
               Alert.alert('Error', 'Failed to delete collection. Please try again.');
+              // Revert the local state if the API call fails
+              setLocalCollections(collections);
             }
           },
           style: "destructive"

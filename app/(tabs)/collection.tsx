@@ -1,7 +1,7 @@
 // File: app/(tabs)/collection.tsx
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { StyleSheet, FlatList, TouchableOpacity, View as RNView, Dimensions, RefreshControl, Modal } from 'react-native';
+import { StyleSheet, FlatList, TouchableOpacity, View as RNView, Dimensions, RefreshControl, Modal, Alert } from 'react-native';
 import { Text, View } from '@/components/Themed';
 import { useDua } from '@/contexts/DuaContext';
 import { useRouter } from 'expo-router';
@@ -41,12 +41,31 @@ export default function CollectionsScreen() {
   };
 
   const handleDelete = (collection) => {
-    setLocalCollections(prevCollections => prevCollections.filter(seq => seq._id !== collection._id));
-    setToastMessage('Collection deleted. Tap to undo.');
-    deleteTimeoutRef.current = setTimeout(async () => {
-      await deleteCollection(collection._id);
-      setToastMessage('');
-    }, 5000);
+    Alert.alert(
+      "Delete Collection",
+      "Are you sure you want to delete this collection?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "Delete",
+          onPress: async () => {
+            try {
+              setLocalCollections(prevCollections => prevCollections.filter(seq => seq._id !== collection._id));
+              await deleteCollection(collection._id);
+            } catch (error) {
+              console.error('Failed to delete collection:', error);
+              Alert.alert('Error', 'Failed to delete collection. Please try again.');
+              // Revert the local state if the API call fails
+              setLocalCollections(collections);
+            }
+          },
+          style: "destructive"
+        }
+      ]
+    );
     setModalVisible(false);
   };
 

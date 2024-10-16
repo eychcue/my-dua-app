@@ -1,7 +1,7 @@
  // File: app/(tabs)/dua.tsx
 
 import React, { useEffect, useRef, useState } from 'react';
-import { StyleSheet, FlatList, RefreshControl, TouchableOpacity, View as RNView, Modal, TouchableWithoutFeedback } from 'react-native';
+import { StyleSheet, FlatList, RefreshControl, TouchableOpacity, View as RNView, Modal, TouchableWithoutFeedback, Alert } from 'react-native';
 import { Text, View } from '@/components/Themed';
 import DuaCard from '@/components/DuaCard';
 import { useDua } from '@/contexts/DuaContext';
@@ -33,21 +33,31 @@ export default function DuaScreen() {
   };
 
   const handleDelete = (dua: Dua) => {
-    const index = localDuas.findIndex(d => d._id === dua._id);
-    setLocalDuas(prevDuas => prevDuas.filter(d => d._id !== dua._id));
-    setDeletedDua({ dua, index });
-    setToastMessage('Dua deleted. Tap to undo.');
-
-    if (deleteTimeoutRef.current) {
-      clearTimeout(deleteTimeoutRef.current);
-    }
-
-    deleteTimeoutRef.current = setTimeout(() => {
-      removeDua(dua._id);
-      setToastMessage('');
-      setDeletedDua(null);
-    }, 5000);
-
+    Alert.alert(
+      "Delete Dua",
+      "Are you sure you want to delete this dua?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "Delete",
+          onPress: async () => {
+            try {
+              setLocalDuas(prevDuas => prevDuas.filter(d => d._id !== dua._id));
+              await removeDua(dua._id);
+            } catch (error) {
+              console.error('Failed to delete dua:', error);
+              Alert.alert('Error', 'Failed to delete dua. Please try again.');
+              // Revert the local state if the API call fails
+              setLocalDuas(duas);
+            }
+          },
+          style: "destructive"
+        }
+      ]
+    );
     setModalVisible(false);
   };
 
