@@ -121,6 +121,7 @@ function RootLayoutNav({ userId }: { userId: string }) {
                     name="collection/[id]"
                     options={{
                       presentation: 'modal',
+                      animation: 'slide_from_bottom',
                       headerShown: false,
                     }}
                   />

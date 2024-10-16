@@ -10,6 +10,7 @@ import {
   Dimensions,
   Modal,
   TouchableWithoutFeedback,
+  SafeAreaView,
 } from 'react-native';
 import { Text, View } from '@/components/Themed';
 import { Dua, Collection } from '@/types/dua';
@@ -81,7 +82,7 @@ export default function CollectionDuaDetails({
   };
 
   return (
-    <RNView style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <RNView style={styles.header}>
         <TouchableOpacity onPress={handleOptions} style={styles.headerButton}>
           <MaterialCommunityIcons name="dots-horizontal" size={24} color="#333" />
@@ -173,7 +174,7 @@ export default function CollectionDuaDetails({
           </RNView>
         </TouchableWithoutFeedback>
       </Modal>
-    </RNView>
+    </SafeAreaView>
   );
 }
 
