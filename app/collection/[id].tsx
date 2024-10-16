@@ -1,9 +1,10 @@
 // File: app/collection/[id].tsx
+
 import React, { useRef, useState, useCallback, useEffect } from 'react';
 import { StyleSheet, Dimensions, FlatList, View as RNView, Alert } from 'react-native';
-import { Text } from '@/components/Themed';
+import { Text, View } from '@/components/Themed';
 import { useDua } from '@/contexts/DuaContext';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import CollectionDuaDetails from '@/components/CollectionDuaDetails';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -50,7 +51,6 @@ export default function CollectionViewerScreen() {
   };
 
   const handleEditCollection = (collectionToEdit: Collection) => {
-    // Close the current modal view and navigate to the edit collection screen
     router.back();
     router.push({
       pathname: '/edit-collection',
@@ -72,7 +72,7 @@ export default function CollectionViewerScreen() {
           onPress: async () => {
             try {
               await deleteCollection(collectionId);
-              router.back(); // Close the collection viewer
+              router.back();
             } catch (error) {
               console.error('Failed to delete collection:', error);
               Alert.alert('Error', 'Failed to delete collection. Please try again.');
@@ -93,7 +93,14 @@ export default function CollectionViewerScreen() {
   }
 
   return (
-    <RNView style={styles.container}>
+    <View style={styles.container}>
+      <Stack.Screen
+        options={{
+          headerShown: false,
+          presentation: 'modal',
+          animation: 'slide_from_bottom',
+        }}
+      />
       <FlatList
         ref={flatListRef}
         data={collectionDuas}
@@ -122,7 +129,7 @@ export default function CollectionViewerScreen() {
         snapToInterval={SCREEN_WIDTH}
         snapToAlignment="center"
       />
-    </RNView>
+    </View>
   );
 }
 
