@@ -10,6 +10,7 @@ import {
   Share,
   SafeAreaView,
   View as RNView,
+  ScrollView,
 } from 'react-native';
 import { Text, View } from '@/components/Themed';
 import { Dua } from '@/types/dua';
@@ -86,13 +87,13 @@ export default function DuaDetails({ dua, onClose }: Props) {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.contentContainer}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.duaCard}>
           <Text style={styles.arabic}>{dua.arabic}</Text>
           <Text style={styles.transliteration}>{dua.transliteration}</Text>
           <Text style={styles.translation}>{dua.translation}</Text>
         </View>
-      </View>
+      </ScrollView>
 
       <View style={styles.footer}>
         <View style={styles.actionSection}>
@@ -188,16 +189,11 @@ const styles = StyleSheet.create({
   closeButton: {
     padding: 10,
   },
-  contentContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 20, // Add some vertical padding
+  scrollContent: {
+    flexGrow: 1,
+    padding: 20,
   },
   duaCard: {
-    flex: 1, // Make the card fill available space
-    width: '100%',
     backgroundColor: 'white',
     borderRadius: 20,
     padding: 25,
@@ -209,7 +205,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
-    justifyContent: 'center', // Center content vertically
   },
   arabic: {
     fontSize: 28,
