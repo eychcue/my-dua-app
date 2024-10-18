@@ -4,13 +4,13 @@ import React, { useState, useCallback } from 'react';
 import {
   StyleSheet,
   TouchableOpacity,
+  Share,
+  View as RNView,
+  ScrollView,
   Dimensions,
   Modal,
   TouchableWithoutFeedback,
-  Share,
   SafeAreaView,
-  View as RNView,
-  ScrollView,
 } from 'react-native';
 import { Text, View } from '@/components/Themed';
 import { Dua } from '@/types/dua';
@@ -21,10 +21,11 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 type Props = {
   dua: Dua;
-  onClose: () => void;
+  onClose?: () => void;
+  isCreateContext?: boolean;
 };
 
-export default function DuaDetails({ dua, onClose }: Props) {
+export default function DuaDetails({ dua, onClose, isCreateContext = false }: Props) {
   const { markAsRead, readCounts, archiveDua, removeDua, isOnline } = useDua();
   const [showOfflineIndicator, setShowOfflineIndicator] = useState(false);
   const [isMarkingAsRead, setIsMarkingAsRead] = useState(false);
@@ -44,7 +45,7 @@ export default function DuaDetails({ dua, onClose }: Props) {
   const handleArchive = async () => {
     if (isOnline) {
       await archiveDua(dua._id);
-      onClose();
+      onClose?.();
     } else {
       alert("Archiving is not available offline. Please try again when you're back online.");
     }
@@ -54,7 +55,7 @@ export default function DuaDetails({ dua, onClose }: Props) {
   const handleDelete = async () => {
     if (isOnline) {
       await removeDua(dua._id);
-      onClose();
+      onClose?.();
     } else {
       alert("Deleting is not available offline. Please try again when you're back online.");
     }
@@ -77,17 +78,22 @@ export default function DuaDetails({ dua, onClose }: Props) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={toggleModal}>
-          <MaterialCommunityIcons name="dots-horizontal" size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle} numberOfLines={1}>{dua.title}</Text>
-        <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-          <Ionicons name="close" size={24} color="#333" />
-        </TouchableOpacity>
-      </View>
+      {!isCreateContext && (
+        <View style={styles.header}>
+          <TouchableOpacity onPress={toggleModal}>
+            <MaterialCommunityIcons name="dots-horizontal" size={24} color="#333" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle} numberOfLines={1}>{dua.title}</Text>
+          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+            <Ionicons name="close" size={24} color="#333" />
+          </TouchableOpacity>
+        </View>
+      )}
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
+        {isCreateContext && (
+          <Text style={styles.createContextTitle}>{dua.title}</Text>
+        )}
         <View style={styles.duaCard}>
           <Text style={styles.arabic}>{dua.arabic}</Text>
           <Text style={styles.transliteration}>{dua.transliteration}</Text>
@@ -124,41 +130,43 @@ export default function DuaDetails({ dua, onClose }: Props) {
         </View>
       )}
 
-      <Modal
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={toggleModal}
-        animationType="none"
-      >
-        <TouchableWithoutFeedback onPress={toggleModal}>
-          <RNView style={styles.modalOverlay}>
-            <TouchableWithoutFeedback>
-              <View style={styles.modalView}>
-                <TouchableOpacity
-                  style={styles.modalOption}
-                  onPress={handleArchive}
-                >
-                  <Ionicons name="archive-outline" size={24} color="#4B5563" />
-                  <Text style={styles.modalOptionText}>Archive</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.modalOption}
-                  onPress={handleDelete}
-                >
-                  <Ionicons name="trash-outline" size={24} color="#EF4444" />
-                  <Text style={styles.modalOptionText}>Delete</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.modalOption, styles.cancelButton]}
-                  onPress={toggleModal}
-                >
-                  <Text style={[styles.modalOptionText, styles.cancelButtonText]}>Cancel</Text>
-                </TouchableOpacity>
-              </View>
-            </TouchableWithoutFeedback>
-          </RNView>
-        </TouchableWithoutFeedback>
-      </Modal>
+      {!isCreateContext && (
+        <Modal
+          transparent={true}
+          visible={modalVisible}
+          onRequestClose={toggleModal}
+          animationType="none"
+        >
+          <TouchableWithoutFeedback onPress={toggleModal}>
+            <RNView style={styles.modalOverlay}>
+              <TouchableWithoutFeedback>
+                <View style={styles.modalView}>
+                  <TouchableOpacity
+                    style={styles.modalOption}
+                    onPress={handleArchive}
+                  >
+                    <Ionicons name="archive-outline" size={24} color="#4B5563" />
+                    <Text style={styles.modalOptionText}>Archive</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.modalOption}
+                    onPress={handleDelete}
+                  >
+                    <Ionicons name="trash-outline" size={24} color="#EF4444" />
+                    <Text style={styles.modalOptionText}>Delete</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.modalOption, styles.cancelButton]}
+                    onPress={toggleModal}
+                  >
+                    <Text style={[styles.modalOptionText, styles.cancelButtonText]}>Cancel</Text>
+                  </TouchableOpacity>
+                </View>
+              </TouchableWithoutFeedback>
+            </RNView>
+          </TouchableWithoutFeedback>
+        </Modal>
+      )}
     </SafeAreaView>
   );
 }
@@ -185,6 +193,13 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'center',
     marginHorizontal: 10,
+  },
+  createContextTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+    textAlign: 'center',
+    marginVertical: 20,
   },
   closeButton: {
     padding: 10,

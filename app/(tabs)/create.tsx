@@ -1,12 +1,12 @@
 // File: app/(tabs)/create.tsx
 
-import React, { useState } from 'react';
-import { StyleSheet, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Keyboard, TouchableWithoutFeedback } from 'react-native';
+import React, { useState, useRef, useCallback } from 'react';
+import { StyleSheet, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Keyboard, TouchableWithoutFeedback, View as RNView } from 'react-native';
 import { Text, View } from '@/components/Themed';
 import { createDua } from '@/api';
-import DuaDetails from '@/components/DuaDetails';
 import { useDua } from '@/contexts/DuaContext';
 import { Dua } from '@/types/dua';
+import DuaDetails from '@/components/DuaDetails';
 
 export default function CreateScreen() {
   const [description, setDescription] = useState('');
@@ -15,6 +15,19 @@ export default function CreateScreen() {
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const { addDua } = useDua();
+  const scrollViewRef = useRef<ScrollView>(null);
+  const generatedDuaRef = useRef<RNView>(null);
+
+  const scrollToGeneratedDua = useCallback(() => {
+    if (generatedDuaRef.current && scrollViewRef.current) {
+      generatedDuaRef.current.measureLayout(
+        scrollViewRef.current.getInnerViewNode(),
+        (_, y) => {
+          scrollViewRef.current?.scrollTo({ y: y, animated: true });
+        }
+      );
+    }
+  }, []);
 
   const handleCreateDua = async () => {
     if (!description.trim()) {
@@ -40,6 +53,8 @@ export default function CreateScreen() {
         description: backendDua.description,
       };
       setGeneratedDua(newDua);
+      // Delay scrolling to ensure the new dua is rendered
+      setTimeout(scrollToGeneratedDua, 100);
     } catch (err) {
       console.error('Error in handleCreateDua:', err);
       setError(`Failed to generate dua: ${err instanceof Error ? err.message : 'Unknown error'}`);
@@ -68,7 +83,10 @@ export default function CreateScreen() {
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView
+        ref={scrollViewRef}
+        contentContainerStyle={styles.container}
+      >
         <Text style={styles.title}>Create a New Dua</Text>
         <View style={styles.inputContainer}>
           <TextInput
@@ -101,8 +119,11 @@ export default function CreateScreen() {
         {successMessage ? <Text style={styles.successText}>{successMessage}</Text> : null}
 
         {generatedDua && (
-          <View style={styles.generatedDuaContainer}>
-            <DuaDetails dua={generatedDua} />
+          <RNView
+            style={styles.generatedDuaContainer}
+            ref={generatedDuaRef}
+          >
+            <DuaDetails dua={generatedDua} isCreateContext={true} />
             <TouchableOpacity
               style={[styles.button, isLoading && styles.disabledButton]}
               onPress={handleAddDua}
@@ -114,7 +135,7 @@ export default function CreateScreen() {
                 <Text style={styles.buttonText}>Add to My Duas</Text>
               )}
             </TouchableOpacity>
-          </View>
+          </RNView>
         )}
       </ScrollView>
     </TouchableWithoutFeedback>
