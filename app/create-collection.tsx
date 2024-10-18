@@ -108,6 +108,12 @@ export default function CreateCollectionScreen() {
           headerBackTitle: "Collections",
         }}
       />
+      <TextInput
+        style={styles.input}
+        onChangeText={setCollectionName}
+        value={collectionName}
+        placeholder="Enter collection name"
+      />
       <Text style={styles.subtitle}>Select Duas:</Text>
       <FlatList
         data={duas}
