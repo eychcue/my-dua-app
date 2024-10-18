@@ -1,7 +1,7 @@
 // File: app/(tabs)/create.tsx
 
 import React, { useState } from 'react';
-import { StyleSheet, TextInput, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import { StyleSheet, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { Text, View } from '@/components/Themed';
 import { createDua } from '@/api';
 import DuaDetails from '@/components/DuaDetails';
@@ -55,7 +55,7 @@ export default function CreateScreen() {
     setSuccessMessage('');
     try {
       await addDua(generatedDua);
-      setSuccessMessage('Dua added successfully!');
+      setSuccessMessage(`Your dua has been successfully added to "My Duas". May it bring you blessings and comfort.`);
       setDescription('');
       setGeneratedDua(null);
     } catch (err) {
@@ -67,46 +67,57 @@ export default function CreateScreen() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Create a New Dua</Text>
-      <TextInput
-        style={styles.input}
-        onChangeText={setDescription}
-        value={description}
-        placeholder="Enter dua description"
-      />
-      <TouchableOpacity
-        style={styles.button}
-        onPress={handleCreateDua}
-        disabled={isLoading}
-      >
-        {isLoading ? (
-          <ActivityIndicator color="white" />
-        ) : (
-          <Text style={styles.buttonText}>Generate Dua</Text>
-        )}
-      </TouchableOpacity>
-
-      {error ? <Text style={styles.errorText}>{error}</Text> : null}
-      {successMessage ? <Text style={styles.successText}>{successMessage}</Text> : null}
-
-      {generatedDua && (
-        <View style={styles.generatedDuaContainer}>
-          <DuaDetails dua={generatedDua} />
-          <TouchableOpacity
-            style={styles.button}
-            onPress={handleAddDua}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <ActivityIndicator color="white" />
-            ) : (
-              <Text style={styles.buttonText}>Add Dua</Text>
-            )}
-          </TouchableOpacity>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+      <ScrollView contentContainerStyle={styles.container}>
+        <Text style={styles.title}>Create a New Dua</Text>
+        <View style={styles.inputContainer}>
+          <TextInput
+            style={styles.input}
+            onChangeText={setDescription}
+            value={description}
+            placeholder="Enter your dua description here..."
+            placeholderTextColor="#888"
+            multiline
+            numberOfLines={6}
+            textAlignVertical="top"
+          />
+          <Text style={styles.hintText}>
+            Tip: You can ask for duas related to various aspects of life, such as health, family, career, spirituality, or any specific situation you're facing.
+          </Text>
         </View>
-      )}
-    </ScrollView>
+        <TouchableOpacity
+          style={[styles.button, isLoading && styles.disabledButton]}
+          onPress={handleCreateDua}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator color="white" />
+          ) : (
+            <Text style={styles.buttonText}>Generate Dua</Text>
+          )}
+        </TouchableOpacity>
+
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+        {successMessage ? <Text style={styles.successText}>{successMessage}</Text> : null}
+
+        {generatedDua && (
+          <View style={styles.generatedDuaContainer}>
+            <DuaDetails dua={generatedDua} />
+            <TouchableOpacity
+              style={[styles.button, isLoading && styles.disabledButton]}
+              onPress={handleAddDua}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <Text style={styles.buttonText}>Add to My Duas</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
+      </ScrollView>
+    </TouchableWithoutFeedback>
   );
 }
 
@@ -114,42 +125,67 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     padding: 20,
+    backgroundColor: '#f5f5f5',
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
+    marginBottom: 20,
+    color: '#333',
+  },
+  inputContainer: {
+    width: '100%',
     marginBottom: 20,
   },
   input: {
     width: '100%',
-    height: 40,
-    borderColor: 'gray',
+    minHeight: 120,
+    borderColor: '#ccc',
     borderWidth: 1,
-    marginBottom: 20,
-    paddingHorizontal: 10,
+    borderRadius: 10,
+    padding: 15,
+    fontSize: 16,
+    backgroundColor: 'white',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  hintText: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 10,
+    fontStyle: 'italic',
   },
   button: {
-    backgroundColor: 'blue',
-    padding: 10,
-    borderRadius: 5,
+    backgroundColor: '#4CAF50',
+    padding: 15,
+    borderRadius: 25,
     width: '100%',
     alignItems: 'center',
     marginBottom: 10,
   },
   buttonText: {
     color: 'white',
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
   },
+  disabledButton: {
+    backgroundColor: '#A5D6A7',
+  },
   errorText: {
-    color: 'red',
+    color: '#D32F2F',
     marginBottom: 10,
+    fontSize: 16,
   },
   successText: {
-    color: 'green',
+    color: '#4CAF50',
     marginBottom: 10,
+    fontSize: 16,
+    textAlign: 'center',
   },
   generatedDuaContainer: {
     marginTop: 20,
