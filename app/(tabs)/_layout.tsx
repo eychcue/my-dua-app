@@ -46,7 +46,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="dua"
         options={{
-          title: 'Duas',
+          title: 'My Duas',  // Changed from 'Duas' to 'My Duas'
           tabBarIcon: ({ color }) => <TabBarIcon name="book" color={color} />,
           headerRight: () => (
             <TouchableOpacity onPress={openSettings} style={{ marginRight: 15 }}>
@@ -70,7 +70,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="collection"
         options={{
-          title: 'Collection',
+          title: 'Collections',  // Changed from 'Collection' to 'Collections'
           tabBarIcon: ({ color }) => <TabBarIcon name="list" color={color} />,
           headerRight: () => (
             <TouchableOpacity onPress={createNewCollection} style={{ marginRight: 15 }}>

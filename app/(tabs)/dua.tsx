@@ -97,7 +97,6 @@ export default function DuaScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>My Duas</Text>
       <FlatList
         data={localDuas}
         renderItem={renderDuaItem}

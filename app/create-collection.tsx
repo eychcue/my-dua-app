@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { StyleSheet, TextInput, TouchableOpacity, FlatList, View as RNView, Switch, Alert } from 'react-native';
 import { Text, View } from '@/components/Themed';
 import { useDua } from '@/contexts/DuaContext';
-import { useRouter } from 'expo-router';
+import { useRouter, Stack } from 'expo-router';
 import { Dua } from '@/types/dua';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Notifications from 'expo-notifications';
@@ -102,12 +102,11 @@ export default function CreateCollectionScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Create New Collection</Text>
-      <TextInput
-        style={styles.input}
-        onChangeText={setCollectionName}
-        value={collectionName}
-        placeholder="Enter collection name"
+      <Stack.Screen
+        options={{
+          title: "New Collection",
+          headerBackTitle: "Collections",
+        }}
       />
       <Text style={styles.subtitle}>Select Duas:</Text>
       <FlatList

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, TextInput, TouchableOpacity, View as RNView, Switch, FlatList, Alert } from 'react-native';
 import { Text, View } from '@/components/Themed';
 import { useDua } from '@/contexts/DuaContext';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Notifications from 'expo-notifications';
@@ -151,7 +151,12 @@ export default function EditCollectionScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Edit Collection</Text>
+      <Stack.Screen
+        options={{
+          title: "Edit Collection",
+          headerBackTitle: "Collections",
+        }}
+      />
       <TextInput
         style={styles.input}
         value={collectionName}
