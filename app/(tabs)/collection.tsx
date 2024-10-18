@@ -124,16 +124,27 @@ export default function CollectionsScreen() {
 
   return (
     <View style={styles.container}>
-      <FlatList
-        data={localCollections}
-        renderItem={renderCollectionItem}
-        keyExtractor={(item) => item._id}
-        contentContainerStyle={styles.listContent}
-        numColumns={2}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      />
+      {localCollections.length === 0 ? (
+        <View style={styles.emptyStateContainer}>
+          <Text style={styles.emptyStateText}>
+            Tap the <Text style={styles.boldPlus}>+</Text> button in the top right
+          </Text>
+          <Text style={styles.emptyStateText}>
+            to create your first collection
+          </Text>
+        </View>
+      ) : (
+        <FlatList
+          data={localCollections}
+          renderItem={renderCollectionItem}
+          keyExtractor={(item) => item._id}
+          contentContainerStyle={styles.listContent}
+          numColumns={2}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+        />
+      )}
       <Modal
         transparent={true}
         visible={modalVisible}
@@ -288,5 +299,22 @@ const styles = StyleSheet.create({
   toastText: {
     color: 'white',
     textAlign: 'center',
+  },
+  emptyStateContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  emptyStateText: {
+    fontSize: 18,
+    textAlign: 'center',
+    marginBottom: 10,
+    color: '#333',
+  },
+  boldPlus: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#3B82F6', // Using a blue color to make it stand out
   },
 });
