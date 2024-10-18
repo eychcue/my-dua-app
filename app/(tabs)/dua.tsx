@@ -1,7 +1,7 @@
  // File: app/(tabs)/dua.tsx
 
 import React, { useEffect, useRef, useState } from 'react';
-import { StyleSheet, FlatList, RefreshControl, TouchableOpacity, View as RNView, Modal, TouchableWithoutFeedback, Alert } from 'react-native';
+import { StyleSheet, FlatList, RefreshControl, TouchableOpacity, View as RNView, Modal, TouchableWithoutFeedback, Alert, Image } from 'react-native';
 import { Text, View } from '@/components/Themed';
 import DuaCard from '@/components/DuaCard';
 import { useDua } from '@/contexts/DuaContext';
@@ -97,6 +97,16 @@ export default function DuaScreen() {
 
   return (
     <View style={styles.container}>
+      {localDuas.length === 0 ? (
+        <View style={styles.emptyStateContainer}>
+          <Text style={styles.emptyStateText}>You haven't added any duas yet.</Text>
+          <Text style={styles.emptyStateSubText}>Create your first dua!</Text>
+          <RNView style={styles.arrowContainer}>
+            <Ionicons name="arrow-down" size={40} color="#3B82F6" />
+          </RNView>
+          <Text style={styles.emptyStateHintText}>Tap the Create tab below</Text>
+        </View>
+      ) : (
       <FlatList
         data={localDuas}
         renderItem={renderDuaItem}
@@ -106,6 +116,7 @@ export default function DuaScreen() {
           <RefreshControl refreshing={false} onRefresh={handleRefresh} />
         }
       />
+      )}
       <Modal
         transparent={true}
         visible={modalVisible}
@@ -202,5 +213,30 @@ const styles = StyleSheet.create({
     color: '#3B82F6',
     fontWeight: 'bold',
     marginLeft: 0,
+  },
+  emptyStateContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  emptyStateText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  emptyStateSubText: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 30,
+  },
+  arrowContainer: {
+    marginBottom: 10,
+  },
+  emptyStateHintText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
   },
 });

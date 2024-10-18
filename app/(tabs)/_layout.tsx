@@ -5,11 +5,12 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Ionicons } from '@expo/vector-icons';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Tabs } from 'expo-router';
-import { TouchableOpacity } from 'react-native';
+import { TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useClientOnlyValue } from '@/components/useClientOnlyValue';
+import { Text } from '@/components/Themed';
 
 function TabBarIcon(props: {
   name: React.ComponentProps<typeof FontAwesome>['name'];
@@ -59,7 +60,12 @@ export default function TabLayout() {
         name="create"
         options={{
           title: 'Create',
-          tabBarIcon: ({ color }) => <TabBarIcon name="plus" color={color} />,
+          tabBarIcon: ({ color }) => <TabBarIcon name="plus-circle" color={color} />,
+          tabBarLabel: ({ focused }) => (
+            <Text style={[styles.tabBarLabel, focused && styles.tabBarLabelFocused]}>
+              Create
+            </Text>
+          ),
           headerRight: () => (
             <TouchableOpacity onPress={openSettings} style={{ marginRight: 15 }}>
               <FontAwesome name="cog" size={24} color={Colors[colorScheme ?? 'light'].text} />
@@ -82,3 +88,14 @@ export default function TabLayout() {
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  tabBarLabel: {
+    fontSize: 12,
+    textAlign: 'center',
+  },
+  tabBarLabelFocused: {
+    fontWeight: 'bold',
+    color: Colors.light.tint,
+  },
+});
