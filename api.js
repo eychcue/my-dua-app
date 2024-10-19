@@ -7,7 +7,7 @@ import { BackendDua, Collection } from './types/dua';
 import NetInfo from '@react-native-community/netinfo';
 import { getOfflineReads, clearOfflineReads } from './utils/offlineStorage';
 
-const BASE_URL = 'https://a0ec-24-99-84-59.ngrok-free.app'; // Verify this URL
+const BASE_URL = 'https://dbc6-24-99-84-59.ngrok-free.app'; // Verify this URL
 
 const api = axios.create({
   baseURL: BASE_URL,

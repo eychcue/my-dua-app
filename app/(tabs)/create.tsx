@@ -81,6 +81,17 @@ export default function CreateScreen() {
     }
   };
 
+  const resetForm = () => {
+    setDescription('');
+    setGeneratedDua(null);
+    setError('');
+    setSuccessMessage('');
+  };
+
+  const handleCancel = () => {
+    resetForm();
+  };
+
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
       <ScrollView
@@ -134,6 +145,9 @@ export default function CreateScreen() {
               ) : (
                 <Text style={styles.buttonText}>Add to My Duas</Text>
               )}
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleCancel}>
+              <Text style={styles.cancelText}>Cancel</Text>
             </TouchableOpacity>
           </RNView>
         )}
@@ -211,5 +225,13 @@ const styles = StyleSheet.create({
   generatedDuaContainer: {
     marginTop: 20,
     width: '100%',
+  },
+  cancelText: {
+    color: '#007AFF',
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginTop: 0, //changed from 15 to 0
+    padding: 10,
   },
 });
