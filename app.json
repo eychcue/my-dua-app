@@ -14,14 +14,29 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.myduaapp.mydua"
+      "bundleIdentifier": "com.myduaapp.mydua",
+      "associatedDomains": ["applinks:dbc6-24-99-84-59.ngrok-free.app"]
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.myduaapp.mydua"
+      "package": "com.myduaapp.mydua",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "dbc6-24-99-84-59.ngrok-free.app",
+              "pathPrefix": "/link/dua"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
     "web": {
       "bundler": "metro",

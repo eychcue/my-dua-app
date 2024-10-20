@@ -15,6 +15,21 @@ import { getOrCreateUserId } from '@/api';
 import { debounce } from 'lodash';
 import { MenuProvider } from 'react-native-popup-menu';
 import NetInfo from '@react-native-community/netinfo';
+import * as Linking from 'expo-linking';
+
+const linking = {
+  prefixes: ['mydua://', 'https://dbc6-24-99-84-59.ngrok-free.app'],
+  config: {
+    screens: {
+      '(tabs)': {
+        screens: {
+          dua: 'dua',
+        },
+      },
+      'dua': 'dua/:id',
+    },
+  },
+};
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -89,6 +104,28 @@ export default function RootLayout() {
     initializeApp();
   }, [loaded, handleNotification]);
 
+  useEffect(() => {
+    const handleDeepLink = (event) => {
+      let data = Linking.parse(event.url);
+      if (data.path === 'dua') {
+        router.push(`/dua/${data.queryParams.id}`);
+      }
+    };
+
+    Linking.addEventListener('url', handleDeepLink);
+
+    // Check for initial URL
+    Linking.getInitialURL().then((url) => {
+      if (url) {
+        handleDeepLink({ url });
+      }
+    });
+
+    return () => {
+      Linking.removeEventListener('url', handleDeepLink);
+    };
+  }, []);
+
   if (!loaded || (!userId && !initError)) {
     return null;
   }
@@ -155,3 +192,7 @@ function RootLayoutNav({ userId }: { userId: string }) {
     </View>
   );
 }
+
+RootLayout.navigationOptions = {
+  linking,
+};
