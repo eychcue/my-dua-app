@@ -3,7 +3,7 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { useRouter, SplashScreen, Stack } from 'expo-router';
+import { useRouter, useSegments, SplashScreen, Stack } from 'expo-router';
 import * as Notifications from 'expo-notifications';
 import { setupNotifications, clearOrphanedNotifications } from '../utils/notificationHandler';
 import { useEffect, useState, useCallback, useRef } from 'react';
@@ -47,6 +47,7 @@ export default function RootLayout() {
   const [userId, setUserId] = useState<string | null>(null);
   const [initError, setInitError] = useState<Error | null>(null);
   const router = useRouter();
+  const segments = useSegments();
   const notificationListener = useRef<Notifications.Subscription>();
 
   useEffect(() => {
@@ -106,16 +107,48 @@ export default function RootLayout() {
 
   useEffect(() => {
     const handleDeepLink = (event: { url: string }) => {
-      const data = Linking.parse(event.url);
-      if (data.path === 'dua') {
-        router.push({
-          pathname: '/dua/[id]',
-          params: { id: data.queryParams?.id }
-        });
+      console.log('Received deep link:', event.url);
+
+      const url = new URL(event.url);
+      console.log('Parsed URL:', url);
+
+      const pathSegments = url.pathname.split('/').filter(Boolean);
+      console.log('Path segments:', pathSegments);
+
+      if (pathSegments.length >= 2 && pathSegments[0] === 'link' && pathSegments[1] === 'dua') {
+        const duaId = pathSegments[2];
+        console.log('Extracted dua ID:', duaId);
+
+        if (duaId) {
+          console.log('Navigating to dua with ID:', duaId);
+          router.replace('/(tabs)');
+          setTimeout(() => {
+            router.push({
+              pathname: '/dua/[id]',
+              params: { id: duaId }
+            });
+          }, 100);
+        }
+      } else if (url.protocol === 'mydua:' && pathSegments[0] === 'dua') {
+        const duaId = pathSegments[1];
+        console.log('Extracted dua ID from custom scheme:', duaId);
+
+        if (duaId) {
+          console.log('Navigating to dua with ID:', duaId);
+          router.replace('/(tabs)');
+          setTimeout(() => {
+            router.push({
+              pathname: '/dua/[id]',
+              params: { id: duaId }
+            });
+          }, 100);
+        }
+      } else {
+        console.log('Unhandled deep link format');
       }
     };
 
-    Linking.addEventListener('url', handleDeepLink as any);
+    const subscription = Linking.addEventListener('url', handleDeepLink as any);
 
     Linking.getInitialURL().then((url) => {
       if (url) {
@@ -124,7 +157,7 @@ export default function RootLayout() {
     });
 
     return () => {
-      Linking.removeAllListeners('url');
+      subscription.remove();
     };
   }, [router]);
 
