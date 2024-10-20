@@ -105,16 +105,18 @@ export default function RootLayout() {
   }, [loaded, handleNotification]);
 
   useEffect(() => {
-    const handleDeepLink = (event) => {
-      let data = Linking.parse(event.url);
+    const handleDeepLink = (event: { url: string }) => {
+      const data = Linking.parse(event.url);
       if (data.path === 'dua') {
-        router.push(`/dua/${data.queryParams.id}`);
+        router.push({
+          pathname: '/dua/[id]',
+          params: { id: data.queryParams?.id }
+        });
       }
     };
 
-    Linking.addEventListener('url', handleDeepLink);
+    Linking.addEventListener('url', handleDeepLink as any);
 
-    // Check for initial URL
     Linking.getInitialURL().then((url) => {
       if (url) {
         handleDeepLink({ url });
@@ -122,9 +124,9 @@ export default function RootLayout() {
     });
 
     return () => {
-      Linking.removeEventListener('url', handleDeepLink);
+      Linking.removeAllListeners('url');
     };
-  }, []);
+  }, [router]);
 
   if (!loaded || (!userId && !initError)) {
     return null;

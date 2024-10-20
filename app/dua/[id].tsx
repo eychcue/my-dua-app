@@ -1,7 +1,7 @@
 // File: app/dua/[id].tsx
 
-import React from 'react';
-import { StyleSheet, View, Text } from 'react-native';
+import React, { useEffect } from 'react';
+import { StyleSheet, View, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useDua } from '@/contexts/DuaContext';
 import DuaDetails from '@/components/DuaDetails';
