@@ -2,6 +2,7 @@
 
 import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback } from 'react';
 import {
+  getDua,
   getUserDuas,
   addDuaToUser,
   createCollection,
@@ -292,6 +293,25 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
+  const fetchDua = useCallback(async (duaId: string) => {
+    try {
+      const fetchedDua = await getDua(duaId);
+      setDuas(prevDuas => {
+        const existingDuaIndex = prevDuas.findIndex(dua => dua._id === fetchedDua._id);
+        if (existingDuaIndex !== -1) {
+          // Update existing dua
+          const updatedDuas = [...prevDuas];
+          updatedDuas[existingDuaIndex] = fetchedDua;
+          return updatedDuas;
+        } else {
+          // Add new dua
+          return [...prevDuas, fetchedDua];
+        }
+      });
+    } catch (error) {
+      console.error('Failed to fetch dua', error);
+    }
+  }, []);
 
   const addDua = async (dua: Dua) => {
     try {
@@ -670,6 +690,7 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       collections,
       readCounts,
       fetchDuas,
+      fetchDua,
       addDua,
       addCollection,
       fetchCollections,
