@@ -15,7 +15,8 @@ export default function CollectionViewerScreen() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
   const router = useRouter();
-
+  const [localCollections, setLocalCollections] = useState(collections);
+  
   const collection = collections.find(seq => seq._id === id);
   const [collectionDuas, setCollectionDuas] = useState<Dua[]>([]);
 
