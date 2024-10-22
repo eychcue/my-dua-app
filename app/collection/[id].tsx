@@ -11,7 +11,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function CollectionViewerScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { duas, collections, batchMarkAsRead, deleteCollection } = useDua();
+  const { duas, collections, deleteCollection } = useDua();
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
   const router = useRouter();
@@ -41,12 +41,6 @@ export default function CollectionViewerScreen() {
   }, [currentIndex, collectionDuas.length]);
 
   const handleClose = () => {
-    const viewedDuaIds = collectionDuas.slice(0, currentIndex + 1).map(dua => dua._id);
-    if (viewedDuaIds.length > 0) {
-      batchMarkAsRead(viewedDuaIds).catch(error => {
-        console.error('Failed to batch mark duas as read:', error);
-      });
-    }
     router.back();
   };
 
