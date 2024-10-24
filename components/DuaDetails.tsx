@@ -1,6 +1,6 @@
 // File: components/DuaDetails.tsx
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   StyleSheet,
   TouchableOpacity,
@@ -12,6 +12,7 @@ import {
   Modal,
   TouchableWithoutFeedback,
   SafeAreaView,
+  ActivityIndicator,
 } from 'react-native';
 import { Text, View } from '@/components/Themed';
 import { Dua } from '@/types/dua';
@@ -24,12 +25,15 @@ type Props = {
   dua: Dua;
   onClose?: () => void;
   isCreateContext?: boolean;
+  isUserDua: boolean; // Add this prop
 };
 
-export default function DuaDetails({ dua, onClose, isCreateContext = false }: Props) {
-  const { markAsRead, readCounts, archiveDua, removeDua, isOnline } = useDua();
+// Then in your DuaDetails component, use this prop instead of checking duas.some()
+export default function DuaDetails({ dua, onClose, isCreateContext = false, isUserDua }: Props) {
+  const { markAsRead, readCounts, archiveDua, removeDua, isOnline, duas, addDua } = useDua();
   const [showOfflineIndicator, setShowOfflineIndicator] = useState(false);
   const [isMarkingAsRead, setIsMarkingAsRead] = useState(false);
+  const [isAddingDua, setIsAddingDua] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
 
   const handleMarkAsRead = useCallback(async () => {
@@ -42,6 +46,19 @@ export default function DuaDetails({ dua, onClose, isCreateContext = false }: Pr
     }
     setIsMarkingAsRead(false);
   }, [dua._id, markAsRead, isOnline, isMarkingAsRead]);
+
+  const handleAddToMyDuas = async () => {
+    if (isAddingDua) return;
+    setIsAddingDua(true);
+    try {
+      await addDua(dua);
+      onClose?.();
+    } catch (error) {
+      console.error('Error adding dua:', error);
+    } finally {
+      setIsAddingDua(false);
+    }
+  };
 
   const handleArchive = async () => {
     if (isOnline) {
@@ -86,9 +103,11 @@ export default function DuaDetails({ dua, onClose, isCreateContext = false }: Pr
     <SafeAreaView style={styles.container}>
       {!isCreateContext && (
         <View style={styles.header}>
-          <TouchableOpacity onPress={toggleModal}>
-            <MaterialCommunityIcons name="dots-horizontal" size={24} color="#333" />
-          </TouchableOpacity>
+          {isUserDua && (
+            <TouchableOpacity onPress={toggleModal}>
+              <MaterialCommunityIcons name="dots-horizontal" size={24} color="#333" />
+            </TouchableOpacity>
+          )}
           <Text style={styles.headerTitle} numberOfLines={1}>{dua.title}</Text>
           <TouchableOpacity style={styles.closeButton} onPress={onClose}>
             <Ionicons name="close" size={24} color="#333" />
@@ -109,25 +128,43 @@ export default function DuaDetails({ dua, onClose, isCreateContext = false }: Pr
 
       <View style={styles.footer}>
         <View style={styles.actionSection}>
+          {isUserDua ? (
+            <TouchableOpacity
+              style={[styles.actionButton, styles.readButton, isMarkingAsRead && styles.disabledButton]}
+              onPress={handleMarkAsRead}
+              disabled={isMarkingAsRead}
+            >
+              <Ionicons name="book-outline" size={24} color="white" />
+              <Text style={styles.actionButtonText}>
+                {isMarkingAsRead ? 'Marking...' : 'Mark as Read'}
+              </Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={[styles.actionButton, styles.addButton, isAddingDua && styles.disabledButton]}
+              onPress={handleAddToMyDuas}
+              disabled={isAddingDua}
+            >
+              <Ionicons name="add-circle-outline" size={24} color="white" />
+              <Text style={styles.actionButtonText}>
+                {isAddingDua ? 'Adding...' : 'Add to Duas'}
+              </Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity
-            style={[styles.actionButton, styles.readButton, isMarkingAsRead && styles.disabledButton]}
-            onPress={handleMarkAsRead}
-            disabled={isMarkingAsRead}
+            style={[styles.actionButton, styles.shareButton]}
+            onPress={handleShare}
           >
-            <Ionicons name="book-outline" size={24} color="white" />
-            <Text style={styles.actionButtonText}>
-              {isMarkingAsRead ? 'Marking...' : 'Mark as Read'}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionButton, styles.shareButton]} onPress={handleShare}>
             <Ionicons name="share-outline" size={24} color="white" />
             <Text style={styles.actionButtonText}>Share</Text>
           </TouchableOpacity>
         </View>
-        <Text style={styles.readCount}>
-          Read {readCounts[dua._id] || 0} times
-          {!isOnline && showOfflineIndicator && " (Saved offline)"}
-        </Text>
+        {isUserDua && (
+          <Text style={styles.readCount}>
+            Read {readCounts[dua._id] || 0} times
+            {!isOnline && showOfflineIndicator && " (Saved offline)"}
+          </Text>
+        )}
       </View>
 
       {!isOnline && (
@@ -136,7 +173,7 @@ export default function DuaDetails({ dua, onClose, isCreateContext = false }: Pr
         </View>
       )}
 
-      {!isCreateContext && (
+      {!isCreateContext && isUserDua && (
         <Modal
           transparent={true}
           visible={modalVisible}
@@ -281,6 +318,9 @@ const styles = StyleSheet.create({
   },
   shareButton: {
     backgroundColor: '#3B82F6',
+  },
+  addButton: {
+    backgroundColor: '#4CAF50', // Green color for add button
   },
   disabledButton: {
     backgroundColor: '#A7F3D0',
