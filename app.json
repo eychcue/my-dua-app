@@ -15,7 +15,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.myduaapp.mydua",
-      "associatedDomains": ["applinks:dbc6-24-99-84-59.ngrok-free.app"]
+      "associatedDomains": ["applinks:myduaapp.com"]
     },
     "android": {
       "adaptiveIcon": {
@@ -30,7 +30,7 @@
           "data": [
             {
               "scheme": "https",
-              "host": "dbc6-24-99-84-59.ngrok-free.app",
+              "host": "myduaapp.com",
               "pathPrefix": "/link/dua"
             }
           ],

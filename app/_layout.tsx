@@ -18,7 +18,7 @@ import NetInfo from '@react-native-community/netinfo';
 import * as Linking from 'expo-linking';
 
 const linking = {
-  prefixes: ['mydua://', 'https://dbc6-24-99-84-59.ngrok-free.app'],
+  prefixes: ['mydua://', 'https://myduaapp.com'],
   config: {
     screens: {
       '(tabs)': {

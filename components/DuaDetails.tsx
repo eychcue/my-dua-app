@@ -70,7 +70,7 @@ export default function DuaDetails({ dua, onClose, isCreateContext = false }: Pr
   const handleShare = async () => {
     try {
       const deepLink = `mydua://dua?id=${dua._id}`;
-      const universalLink = `https://dbc6-24-99-84-59.ngrok-free.app/link/dua/${dua._id}`;
+      const universalLink = `https://myduaapp.com/link/dua/${dua._id}`;
       const message = `Check out this dua:\n\n${dua.title}\n\n${dua.arabic}\n\n${dua.transliteration}\n\n${dua.translation}\n\nOpen in app: ${universalLink}`;
 
       await Share.share({
