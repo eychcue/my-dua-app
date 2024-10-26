@@ -63,8 +63,7 @@
           "icon": "./assets/images/icon.png",
           "color": "#ffffff"
         }
-      ],
-      "expo-in-app-purchases"
+      ]
     ],
     "experiments": {
       "typedRoutes": true
