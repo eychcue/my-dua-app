@@ -5,8 +5,10 @@ import { StyleSheet, TextInput, TouchableOpacity, ScrollView, ActivityIndicator,
 import { Text, View } from '@/components/Themed';
 import { createDua } from '@/api';
 import { useDua } from '@/contexts/DuaContext';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 import { Dua } from '@/types/dua';
 import DuaDetails from '@/components/DuaDetails';
+import SubscriptionModal from '@/components/SubscriptionModal';
 
 export default function CreateScreen() {
   const [description, setDescription] = useState('');
@@ -14,7 +16,9 @@ export default function CreateScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const { addDua } = useDua();
+  const { isSubscribed, freeGenerationsRemaining, decrementFreeGenerations } = useSubscription();
   const scrollViewRef = useRef<ScrollView>(null);
   const generatedDuaRef = useRef<RNView>(null);
 
@@ -34,15 +38,27 @@ export default function CreateScreen() {
       setError('Please enter a dua description');
       return;
     }
+
+    if (!isSubscribed && freeGenerationsRemaining === 0) {
+      setShowSubscriptionModal(true);
+      return;
+    }
+
     setIsLoading(true);
     setError('');
     setSuccessMessage('');
+
     try {
       console.log('Calling createDua with description:', description);
       const backendDua = await createDua(description);
       console.log('Received backendDua:', backendDua);
+
       if (!backendDua || !backendDua._id) {
         throw new Error('Invalid response from server');
+      }
+
+      if (!isSubscribed) {
+        await decrementFreeGenerations();
       }
       const newDua: Dua = {
         _id: backendDua._id,
@@ -92,6 +108,12 @@ export default function CreateScreen() {
     resetForm();
   };
 
+  const getGenerateButtonText = () => {
+    if (isLoading) return '';
+    if (isSubscribed) return 'Generate Dua';
+    return `Generate Dua (${freeGenerationsRemaining} left)`;
+  };  
+
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
       <ScrollView
@@ -99,6 +121,18 @@ export default function CreateScreen() {
         contentContainerStyle={styles.container}
       >
         <Text style={styles.title}>Create a New Dua</Text>
+
+        {!isSubscribed && freeGenerationsRemaining > 0 && (
+          <View style={styles.freeGenerationsInfo}>
+            <Text style={styles.freeGenerationsText}>
+              You have {freeGenerationsRemaining} free {freeGenerationsRemaining === 1 ? 'generation' : 'generations'} remaining
+            </Text>
+            <Text style={styles.freeGenerationsSubtext}>
+              Importing and sharing duas will always be free
+            </Text>
+          </View>
+        )}
+
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.input}
@@ -114,15 +148,25 @@ export default function CreateScreen() {
             Tip: You can ask for duas related to various aspects of life, such as health, family, career, spirituality, or any specific situation you're facing.
           </Text>
         </View>
+
         <TouchableOpacity
-          style={[styles.button, isLoading && styles.disabledButton]}
+          style={[
+            styles.button,
+            isLoading && styles.disabledButton,
+            (!isSubscribed && freeGenerationsRemaining === 0) && styles.upgradeButton
+          ]}
           onPress={handleCreateDua}
           disabled={isLoading}
         >
           {isLoading ? (
             <ActivityIndicator color="white" />
           ) : (
-            <Text style={styles.buttonText}>Generate Dua</Text>
+            <Text style={styles.buttonText}>
+              {!isSubscribed && freeGenerationsRemaining === 0
+                ? 'Upgrade to Generate More Duas'
+                : getGenerateButtonText()
+              }
+            </Text>
           )}
         </TouchableOpacity>
 
@@ -151,6 +195,11 @@ export default function CreateScreen() {
             </TouchableOpacity>
           </RNView>
         )}
+
+        <SubscriptionModal
+          visible={showSubscriptionModal}
+          onClose={() => setShowSubscriptionModal(false)}
+        />
       </ScrollView>
     </TouchableWithoutFeedback>
   );
@@ -233,5 +282,27 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 0, //changed from 15 to 0
     padding: 10,
+  },
+  freeGenerationsInfo: {
+    backgroundColor: '#E8F5E9',
+    padding: 15,
+    borderRadius: 10,
+    marginBottom: 20,
+    alignItems: 'center',
+  },
+  freeGenerationsText: {
+    fontSize: 16,
+    color: '#2E7D32',
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  freeGenerationsSubtext: {
+    fontSize: 14,
+    color: '#4CAF50',
+    marginTop: 5,
+    textAlign: 'center',
+  },
+  upgradeButton: {
+    backgroundColor: '#3B82F6',
   },
 });

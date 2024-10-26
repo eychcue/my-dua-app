@@ -16,6 +16,7 @@ import { debounce } from 'lodash';
 import { MenuProvider } from 'react-native-popup-menu';
 import NetInfo from '@react-native-community/netinfo';
 import * as Linking from 'expo-linking';
+import { SubscriptionProvider } from '../contexts/SubscriptionContext';
 
 const linking = {
   prefixes: ['mydua://', 'https://myduaapp.com'],
@@ -182,47 +183,49 @@ function RootLayoutNav({ userId }: { userId: string }) {
   return (
     <View style={{ flex: 1 }}>
       <MenuProvider>
-        <DuaProvider>
-          <GestureHandlerRootView style={{ flex: 1 }}>
-            <RootSiblingParent>
-              <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-                <Stack>
-                  <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                  <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-                  <Stack.Screen
-                    name="collection/[id]"
-                    options={{
-                      presentation: 'modal',
-                      animation: 'slide_from_bottom',
-                      headerShown: false,
-                    }}
-                  />
-                  <Stack.Screen
-                    name="dua/[id]"
-                    options={{
-                      presentation: 'modal',
-                      headerShown: false,
-                    }}
-                  />
-                  <Stack.Screen
-                    name="settings"
-                    options={{
-                      presentation: 'modal',
-                      title: 'Settings',
-                    }}
-                  />
-                  <Stack.Screen
-                    name="archived"
-                    options={{
-                      presentation: 'modal',
-                      headerShown: false,
-                    }}
-                  />
-                </Stack>
-              </ThemeProvider>
-            </RootSiblingParent>
-          </GestureHandlerRootView>
-        </DuaProvider>
+        <SubscriptionProvider>
+          <DuaProvider>
+            <GestureHandlerRootView style={{ flex: 1 }}>
+              <RootSiblingParent>
+                <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+                  <Stack>
+                    <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                    <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+                    <Stack.Screen
+                      name="collection/[id]"
+                      options={{
+                        presentation: 'modal',
+                        animation: 'slide_from_bottom',
+                        headerShown: false,
+                      }}
+                    />
+                    <Stack.Screen
+                      name="dua/[id]"
+                      options={{
+                        presentation: 'modal',
+                        headerShown: false,
+                      }}
+                    />
+                    <Stack.Screen
+                      name="settings"
+                      options={{
+                        presentation: 'modal',
+                        title: 'Settings',
+                      }}
+                    />
+                    <Stack.Screen
+                      name="archived"
+                      options={{
+                        presentation: 'modal',
+                        headerShown: false,
+                      }}
+                    />
+                  </Stack>
+                </ThemeProvider>
+              </RootSiblingParent>
+            </GestureHandlerRootView>
+          </DuaProvider>
+        </SubscriptionProvider>
       </MenuProvider>
     </View>
   );
