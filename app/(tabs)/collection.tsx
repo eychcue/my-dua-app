@@ -23,9 +23,9 @@ export default function CollectionsScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedCollection, setSelectedCollection] = useState(null);
 
-  useEffect(() => {
-    fetchCollections();
-  }, []);
+  // useEffect(() => {
+  //   fetchCollections();
+  // }, []);
 
   useEffect(() => {
     setLocalCollections(collections);

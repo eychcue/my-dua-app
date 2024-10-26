@@ -20,9 +20,9 @@ export default function DuaScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedDua, setSelectedDua] = useState<Dua | null>(null);
 
-  useEffect(() => {
-    fetchDuas();
-  }, []);
+  // useEffect(() => {
+  //   fetchDuas();
+  // }, []);
 
   useEffect(() => {
     setLocalDuas(duas);
