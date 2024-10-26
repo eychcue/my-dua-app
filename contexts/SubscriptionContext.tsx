@@ -31,9 +31,55 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    initializeIAP();
+    let isMounted = true;
+
+    const initialize = async () => {
+      try {
+        await InAppPurchases.connectAsync();
+
+        // Set up purchase listener
+        InAppPurchases.setPurchaseListener(({ responseCode, results, errorCode }) => {
+          if (responseCode === InAppPurchases.IAPResponseCode.OK) {
+            results?.forEach(async (purchase) => {
+              if (!purchase.acknowledged) {
+                // Acknowledge the purchase
+                await InAppPurchases.finishTransactionAsync(purchase, false);
+              }
+
+              // Update subscription status
+              await SecureStore.setItemAsync(SUBSCRIPTION_STATUS_KEY, 'true');
+              setIsSubscribed(true);
+            });
+          }
+        });
+
+        // Load products
+        const { responseCode, results } = await InAppPurchases.getProductsAsync([
+          PRODUCTS.MONTHLY,
+          PRODUCTS.YEARLY
+        ]);
+
+        if (responseCode === InAppPurchases.IAPResponseCode.OK && isMounted) {
+          setProducts({ responseCode, results });
+        }
+      } catch (error) {
+        console.error('Error initializing IAP:', error);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    initialize();
     loadFreeGenerations();
     loadSubscriptionStatus();
+
+    return () => {
+      isMounted = false;
+      // Disconnect from IAP when component unmounts
+      InAppPurchases.disconnectAsync();
+    };
   }, []);
 
   const loadFreeGenerations = async () => {
@@ -59,47 +105,14 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
   };
 
-  const initializeIAP = async () => {
-    try {
-      await InAppPurchases.connectAsync();
-
-      // Set up purchase listener
-      InAppPurchases.setPurchaseListener(({ responseCode, results, errorCode }) => {
-        if (responseCode === InAppPurchases.IAPResponseCode.OK) {
-          results?.forEach(async (purchase) => {
-            if (!purchase.acknowledged) {
-              // Acknowledge the purchase
-              await InAppPurchases.finishTransactionAsync(purchase, false);
-            }
-
-            // Update subscription status
-            await SecureStore.setItemAsync(SUBSCRIPTION_STATUS_KEY, 'true');
-            setIsSubscribed(true);
-          });
-        }
-      });
-
-      // Load products
-      const { responseCode, results } = await InAppPurchases.getProductsAsync([
-        PRODUCTS.MONTHLY,
-        PRODUCTS.YEARLY
-      ]);
-
-      if (responseCode === InAppPurchases.IAPResponseCode.OK) {
-        setProducts({ responseCode, results });
-      }
-    } catch (error) {
-      console.error('Error initializing IAP:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const purchaseSubscription = async (productId: string) => {
     try {
+      if (!products?.results.some(p => p.productId === productId)) {
+        throw new Error('Product not available for purchase');
+      }
+
       const { responseCode, results } = await InAppPurchases.purchaseItemAsync(productId);
       if (responseCode === InAppPurchases.IAPResponseCode.OK) {
-        // Purchase successful
         await SecureStore.setItemAsync(SUBSCRIPTION_STATUS_KEY, 'true');
         setIsSubscribed(true);
       }

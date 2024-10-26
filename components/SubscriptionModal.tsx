@@ -1,5 +1,6 @@
+// File: components/SubscriptionModal.tsx
 import React from 'react';
-import { Modal, StyleSheet, View, TouchableOpacity, ScrollView, Platform } from 'react-native';
+import { Modal, StyleSheet, View, TouchableOpacity, ScrollView, Platform, ActivityIndicator } from 'react-native';
 import { Text } from './Themed';
 import { useSubscription, PRODUCTS } from '../contexts/SubscriptionContext';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,14 +11,27 @@ interface Props {
 }
 
 export default function SubscriptionModal({ visible, onClose }: Props) {
-  const { products, purchaseSubscription } = useSubscription();
+  const { products, purchaseSubscription, restorePurchases, loading } = useSubscription();
 
   const handlePurchase = async (productId: string) => {
     try {
+      const product = products?.results.find(p => p.productId === productId);
+      if (!product) {
+        throw new Error('Product not found');
+      }
       await purchaseSubscription(productId);
       onClose();
     } catch (error) {
       console.error('Purchase failed:', error);
+    }
+  };
+
+  const handleRestore = async () => {
+    try {
+      await restorePurchases();
+      onClose();
+    } catch (error) {
+      console.error('Restore failed:', error);
     }
   };
 
@@ -42,43 +56,42 @@ export default function SubscriptionModal({ visible, onClose }: Props) {
 
             <Text style={styles.description}>
               Generate unlimited duas and unlock the full potential of your spiritual journey.
-              Import and share existing duas will always remain free.
+              Importing and sharing existing duas will always remain free.
             </Text>
 
-            <View style={styles.plansContainer}>
-              <TouchableOpacity
-                style={[styles.planCard, styles.monthlyPlan]}
-                onPress={() => handlePurchase(PRODUCTS.MONTHLY)}
-              >
-                <Text style={styles.planTitle}>Monthly</Text>
-                <Text style={styles.price}>{monthlyProduct?.priceString || '$4.99'}</Text>
-                <Text style={styles.period}>per month</Text>
-              </TouchableOpacity>
+            {loading ? (
+              <ActivityIndicator size="large" color="#4CAF50" style={styles.loader} />
+            ) : (
+              <View style={styles.plansContainer}>
+                <TouchableOpacity
+                  style={[styles.planCard, styles.monthlyPlan]}
+                  onPress={() => handlePurchase(PRODUCTS.MONTHLY)}
+                  disabled={!monthlyProduct}
+                >
+                  <Text style={styles.planTitle}>Monthly</Text>
+                  <Text style={styles.price}>{monthlyProduct?.priceString || '$4.99'}</Text>
+                  <Text style={styles.period}>per month</Text>
+                </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[styles.planCard, styles.yearlyPlan]}
-                onPress={() => handlePurchase(PRODUCTS.YEARLY)}
-              >
-                <View style={styles.saveBadge}>
-                  <Text style={styles.saveText}>Save ~17%</Text>
-                </View>
-                <Text style={styles.planTitle}>Yearly</Text>
-                <Text style={styles.price}>{yearlyProduct?.priceString || '$49.99'}</Text>
-                <Text style={styles.period}>per year</Text>
-                <Text style={styles.savings}>Two months free!</Text>
-              </TouchableOpacity>
-            </View>
+                <TouchableOpacity
+                  style={[styles.planCard, styles.yearlyPlan]}
+                  onPress={() => handlePurchase(PRODUCTS.YEARLY)}
+                  disabled={!yearlyProduct}
+                >
+                  <View style={styles.saveBadge}>
+                    <Text style={styles.saveText}>Save ~17%</Text>
+                  </View>
+                  <Text style={styles.planTitle}>Yearly</Text>
+                  <Text style={styles.price}>{yearlyProduct?.priceString || '$49.99'}</Text>
+                  <Text style={styles.period}>per year</Text>
+                  <Text style={styles.savings}>Two months free!</Text>
+                </TouchableOpacity>
+              </View>
+            )}
 
             <TouchableOpacity
               style={styles.restoreButton}
-              onPress={async () => {
-                try {
-                  await useSubscription().restorePurchases();
-                  onClose();
-                } catch (error) {
-                  console.error('Restore failed:', error);
-                }
-              }}
+              onPress={handleRestore}
             >
               <Text style={styles.restoreText}>Restore Purchases</Text>
             </TouchableOpacity>
@@ -201,4 +214,7 @@ const styles = StyleSheet.create({
     color: '#007AFF',
     fontSize: 16,
   },
+  loader: {
+    marginVertical: 30,
+  },  
 });
