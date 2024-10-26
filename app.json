@@ -15,7 +15,18 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.myduaapp.mydua",
-      "associatedDomains": ["applinks:myduaapp.com"]
+      "buildNumber": "1",
+      "supportsTablet": true,
+      "associatedDomains": ["applinks:myduaapp.com"],
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": ["mydua"],
+            "CFBundleURLName": "com.myduaapp.mydua"
+          }
+        ]
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -52,7 +63,8 @@
           "icon": "./assets/images/icon.png",
           "color": "#ffffff"
         }
-      ]
+      ],
+      "expo-in-app-purchases"
     ],
     "experiments": {
       "typedRoutes": true
