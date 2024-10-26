@@ -20,6 +20,7 @@ import {
   batchUpdateArchiveStatus,
   batchUpdateDeletionStatus,
   batchUpdateCollections,
+  syncPendingUserCreation,
 } from '../api';
 import { Dua, Collection } from '../types/dua';
 import { cancelCollectionNotification, scheduleCollectionNotification, clearOrphanedNotifications } from '../utils/notificationHandler';
@@ -42,6 +43,11 @@ import { getOfflineReads, addOfflineRead, clearOfflineReads,
   addOfflineCollectionAction,
   getOfflineCollectionActions,
   clearOfflineCollectionActions,
+  getOfflineDeviceId,
+  setOfflineDeviceId,
+  getPendingUserCreation,
+  setPendingUserCreation,
+  clearPendingUserCreation,
  } from '../utils/offlineStorage';
 
 interface DuaContextType {
@@ -89,8 +95,24 @@ export const DuaProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       syncOfflineArchiveActions();
       syncOfflineDeletionActions();
       syncOfflineCollectionActions();
+      syncPendingUserCreation();
     }
   }, [isOnline]);
+
+  useEffect(() => {
+    const initialSync = async () => {
+      const netInfo = await NetInfo.fetch();
+      if (netInfo.isConnected) {
+        try {
+          await syncPendingUserCreation();
+        } catch (error) {
+          console.error('Error during initial user sync:', error);
+        }
+      }
+    };
+
+    initialSync();
+  }, []); // Run once on mount
 
   const syncOfflineCollectionActions = async () => {
     try {

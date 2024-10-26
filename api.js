@@ -5,7 +5,15 @@ import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import { BackendDua, Collection } from './types/dua';
 import NetInfo from '@react-native-community/netinfo';
-import { getOfflineReads, clearOfflineReads } from './utils/offlineStorage';
+import {
+  getOfflineReads,
+  clearOfflineReads,
+  getOfflineDeviceId,
+  setOfflineDeviceId,
+  getPendingUserCreation,
+  setPendingUserCreation,
+  clearPendingUserCreation,
+} from './utils/offlineStorage';
 
 // const BASE_URL = 'https://dbc6-24-99-84-59.ngrok-free.app'; // Verify this URL
 const BASE_URL = 'https://api.myduaapp.com'; // Verify this URL
@@ -17,40 +25,80 @@ const api = axios.create({
   },
 });
 
+export const syncPendingUserCreation = async () => {
+  try {
+    const pendingUser = await getPendingUserCreation();
+    if (!pendingUser) return;
+
+    // Try to create the user in the backend
+    const response = await api.post('/users', { device_id: pendingUser.deviceId });
+
+    if (response.data && response.data._id) {
+      // If successful, clear the pending creation
+      await clearPendingUserCreation();
+      console.log('Successfully synced pending user creation');
+    }
+  } catch (error) {
+    console.error('Error syncing pending user creation:', error);
+    // Keep the pending creation if sync fails
+  }
+};
+
 export const getOrCreateUserId = async () => {
   try {
-    // Try to retrieve the device ID from secure storage
+    // First try to get the device ID from secure storage
     let deviceId = await SecureStore.getItemAsync('deviceId');
 
     if (deviceId) {
       console.log('Retrieved existing deviceId:', deviceId);
       return deviceId;
-    } else {
-      console.log('No existing deviceId found, creating new one');
-      // If the device ID doesn't exist, create a new one
-      deviceId = `${Platform.OS}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    }
 
-      console.log('Sending request to create new user with deviceId:', deviceId);
-      // Create a new user in the backend
-      const response = await api.post('/users', { device_id: deviceId });
+    // If not in secure storage, check offline storage
+    deviceId = await getOfflineDeviceId();
+    if (deviceId) {
+      console.log('Retrieved deviceId from offline storage:', deviceId);
+      // Store it in secure storage as well
+      await SecureStore.setItemAsync('deviceId', deviceId);
+      return deviceId;
+    }
 
-      console.log('Received response from backend:', response.data);
+    // If no device ID exists, create a new one
+    console.log('No existing deviceId found, creating new one');
+    deviceId = `${Platform.OS}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-      if (response.data && response.data._id) {
-        console.log('User created successfully, storing deviceId');
-        // If the user was successfully created in the backend, store the device ID in secure storage
-        await SecureStore.setItemAsync('deviceId', deviceId);
-        return deviceId;
-      } else {
-        console.error('Unexpected response from backend:', response.data);
-        throw new Error('Unexpected response from backend');
+    // Check if we're online
+    const netInfo = await NetInfo.fetch();
+    if (netInfo.isConnected) {
+      console.log('Online - Creating user in backend');
+      try {
+        // Try to create user in backend
+        const response = await api.post('/users', { device_id: deviceId });
+
+        if (response.data && response.data._id) {
+          console.log('User created successfully in backend');
+          await SecureStore.setItemAsync('deviceId', deviceId);
+          await setOfflineDeviceId(deviceId);
+          return deviceId;
+        }
+      } catch (error) {
+        console.error('Failed to create user in backend:', error);
+        // Fall through to offline handling
       }
     }
+
+    // If we're offline or backend request failed, store locally
+    console.log('Storing user creation request offline');
+    await setOfflineDeviceId(deviceId);
+    await SecureStore.setItemAsync('deviceId', deviceId);
+    await setPendingUserCreation({
+      deviceId,
+      timestamp: Date.now()
+    });
+
+    return deviceId;
   } catch (error) {
     console.error('Error in getOrCreateUserId:', error);
-    if (axios.isAxiosError(error)) {
-      console.error('Axios error details:', error.response?.data);
-    }
     throw error;
   }
 };

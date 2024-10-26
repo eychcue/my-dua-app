@@ -9,6 +9,13 @@ const OFFLINE_ARCHIVED_DUAS_KEY = 'offlineArchivedDuas'
 const OFFLINE_DELETED_DUAS_KEY = 'offlineDeletedDuas';
 const OFFLINE_DELETION_ACTIONS_KEY = 'offlineDeletionActions';
 const OFFLINE_DUAS_KEY = 'offlineDuas';
+const OFFLINE_DEVICE_ID_KEY = 'offlineDeviceId';
+const PENDING_USER_CREATION_KEY = 'pendingUserCreation';
+
+interface PendingUserCreation {
+  deviceId: string;
+  timestamp: number;
+}
 
 interface OfflineRead {
   duaId: string;
@@ -27,6 +34,49 @@ interface DeletionAction {
 
 const OFFLINE_COLLECTIONS_KEY = 'offlineCollections';
 const OFFLINE_COLLECTION_ACTIONS_KEY = 'offlineCollectionActions';
+
+export const getOfflineDeviceId = async (): Promise<string | null> => {
+  try {
+    return await AsyncStorage.getItem(OFFLINE_DEVICE_ID_KEY);
+  } catch (e) {
+    console.error('Error getting offline device ID:', e);
+    return null;
+  }
+};
+
+export const setOfflineDeviceId = async (deviceId: string): Promise<void> => {
+  try {
+    await AsyncStorage.setItem(OFFLINE_DEVICE_ID_KEY, deviceId);
+  } catch (e) {
+    console.error('Error setting offline device ID:', e);
+  }
+};
+
+export const getPendingUserCreation = async (): Promise<PendingUserCreation | null> => {
+  try {
+    const jsonValue = await AsyncStorage.getItem(PENDING_USER_CREATION_KEY);
+    return jsonValue != null ? JSON.parse(jsonValue) : null;
+  } catch (e) {
+    console.error('Error getting pending user creation:', e);
+    return null;
+  }
+};
+
+export const setPendingUserCreation = async (pendingUser: PendingUserCreation): Promise<void> => {
+  try {
+    await AsyncStorage.setItem(PENDING_USER_CREATION_KEY, JSON.stringify(pendingUser));
+  } catch (e) {
+    console.error('Error setting pending user creation:', e);
+  }
+};
+
+export const clearPendingUserCreation = async (): Promise<void> => {
+  try {
+    await AsyncStorage.removeItem(PENDING_USER_CREATION_KEY);
+  } catch (e) {
+    console.error('Error clearing pending user creation:', e);
+  }
+};
 
 export interface CollectionAction {
   type: 'create' | 'update' | 'delete';
