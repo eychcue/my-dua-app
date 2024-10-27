@@ -6,6 +6,7 @@ import { Text, View } from '@/components/Themed';
 import { createDua } from '@/api';
 import { useDua } from '@/contexts/DuaContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
+import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import { Dua } from '@/types/dua';
 import DuaDetails from '@/components/DuaDetails';
 import SubscriptionModal from '@/components/SubscriptionModal';
@@ -21,6 +22,8 @@ export default function CreateScreen() {
   const { isSubscribed, freeGenerationsRemaining, decrementFreeGenerations } = useSubscription();
   const scrollViewRef = useRef<ScrollView>(null);
   const generatedDuaRef = useRef<RNView>(null);
+  const { flags } = useFeatureFlags();
+
 
   const scrollToGeneratedDua = useCallback(() => {
     if (generatedDuaRef.current && scrollViewRef.current) {
@@ -39,7 +42,8 @@ export default function CreateScreen() {
       return;
     }
 
-    if (!isSubscribed && freeGenerationsRemaining === 0) {
+    // Only check subscription status if the feature is enabled
+    if (flags.subscriptionEnabled && !isSubscribed && freeGenerationsRemaining === 0) {
       setShowSubscriptionModal(true);
       return;
     }
@@ -57,9 +61,11 @@ export default function CreateScreen() {
         throw new Error('Invalid response from server');
       }
 
-      if (!isSubscribed) {
+      // Only decrement generations if the feature is enabled
+      if (flags.subscriptionEnabled && !isSubscribed) {
         await decrementFreeGenerations();
       }
+
       const newDua: Dua = {
         _id: backendDua._id,
         title: backendDua.title,
@@ -112,7 +118,7 @@ export default function CreateScreen() {
     if (isLoading) return '';
     if (isSubscribed) return 'Generate Dua';
     return `Generate Dua (${freeGenerationsRemaining} left)`;
-  };  
+  };
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
@@ -122,7 +128,8 @@ export default function CreateScreen() {
       >
         <Text style={styles.title}>Create a New Dua</Text>
 
-        {!isSubscribed && freeGenerationsRemaining > 0 && (
+        {/* Only show generations remaining if feature is enabled */}
+        {flags.subscriptionEnabled && !isSubscribed && freeGenerationsRemaining > 0 && (
           <View style={styles.freeGenerationsInfo}>
             <Text style={styles.freeGenerationsText}>
               You have {freeGenerationsRemaining} free {freeGenerationsRemaining === 1 ? 'generation' : 'generations'} remaining
@@ -153,7 +160,7 @@ export default function CreateScreen() {
           style={[
             styles.button,
             isLoading && styles.disabledButton,
-            (!isSubscribed && freeGenerationsRemaining === 0) && styles.upgradeButton
+            (flags.subscriptionEnabled && !isSubscribed && freeGenerationsRemaining === 0) && styles.upgradeButton
           ]}
           onPress={handleCreateDua}
           disabled={isLoading}
@@ -162,9 +169,11 @@ export default function CreateScreen() {
             <ActivityIndicator color="white" />
           ) : (
             <Text style={styles.buttonText}>
-              {!isSubscribed && freeGenerationsRemaining === 0
+              {flags.subscriptionEnabled && !isSubscribed && freeGenerationsRemaining === 0
                 ? 'Upgrade to Generate More Duas'
-                : getGenerateButtonText()
+                : flags.subscriptionEnabled && !isSubscribed
+                  ? `Generate Dua (${freeGenerationsRemaining} left)`
+                  : 'Generate Dua'
               }
             </Text>
           )}
@@ -196,10 +205,13 @@ export default function CreateScreen() {
           </RNView>
         )}
 
-        <SubscriptionModal
-          visible={showSubscriptionModal}
-          onClose={() => setShowSubscriptionModal(false)}
-        />
+        {/* Only show subscription modal if feature is enabled */}
+        {flags.subscriptionEnabled && (
+          <SubscriptionModal
+            visible={showSubscriptionModal}
+            onClose={() => setShowSubscriptionModal(false)}
+          />
+        )}
       </ScrollView>
     </TouchableWithoutFeedback>
   );

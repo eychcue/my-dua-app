@@ -1,9 +1,10 @@
 // File: app/settings.tsx
 
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, TouchableOpacity, FlatList, View as RNView } from 'react-native';
+import { StyleSheet, TouchableOpacity, FlatList, View as RNView, Switch } from 'react-native';
 import { Text, View } from '@/components/Themed';
 import { useDua } from '@/contexts/DuaContext';
+import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import { Dua } from '@/types/dua';
 import { Swipeable } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,6 +15,7 @@ export default function SettingsModal() {
   const { archivedDuas, fetchArchivedDuas, unarchiveDua } = useDua();
   const [showArchivedDuas, setShowArchivedDuas] = useState(false);
   const router = useRouter();
+  const { flags, toggleSubscriptionFeature } = useFeatureFlags();
 
   useEffect(() => {
     fetchArchivedDuas();
@@ -51,6 +53,17 @@ export default function SettingsModal() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Settings</Text>
+
+      {__DEV__ && ( // Only show in development mode
+        <View style={styles.settingItem}>
+          <Text style={styles.settingLabel}>Enable Subscription Feature</Text>
+          <Switch
+            value={flags.subscriptionEnabled}
+            onValueChange={toggleSubscriptionFeature}
+          />
+        </View>
+      )}
+
       <TouchableOpacity style={styles.button} onPress={toggleArchivedDuas}>
         <Text style={styles.buttonText}>
           {showArchivedDuas ? 'Hide Archived Duas' : 'Show Archived Duas'}
@@ -113,5 +126,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: 80,
     height: '100%',
+  },
+  settingItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  settingLabel: {
+    fontSize: 16,
+    color: '#333',
   },
 });

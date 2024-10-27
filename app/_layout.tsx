@@ -17,6 +17,7 @@ import { MenuProvider } from 'react-native-popup-menu';
 import NetInfo from '@react-native-community/netinfo';
 import * as Linking from 'expo-linking';
 import { SubscriptionProvider } from '../contexts/SubscriptionContext';
+import { FeatureFlagsProvider } from '../contexts/FeatureFlagsContext';
 
 const linking = {
   prefixes: ['mydua://', 'https://myduaapp.com'],
@@ -183,8 +184,9 @@ function RootLayoutNav({ userId }: { userId: string }) {
   return (
     <View style={{ flex: 1 }}>
       <MenuProvider>
-        <SubscriptionProvider>
-          <DuaProvider>
+        <FeatureFlagsProvider>
+          <SubscriptionProvider>
+            <DuaProvider>
             <GestureHandlerRootView style={{ flex: 1 }}>
               <RootSiblingParent>
                 <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
@@ -224,8 +226,9 @@ function RootLayoutNav({ userId }: { userId: string }) {
                 </ThemeProvider>
               </RootSiblingParent>
             </GestureHandlerRootView>
-          </DuaProvider>
-        </SubscriptionProvider>
+            </DuaProvider>
+          </SubscriptionProvider>
+        </FeatureFlagsProvider>
       </MenuProvider>
     </View>
   );
