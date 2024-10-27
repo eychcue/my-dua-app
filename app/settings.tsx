@@ -1,10 +1,11 @@
 // File: app/settings.tsx
 
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, TouchableOpacity, FlatList, View as RNView, Switch } from 'react-native';
+import { StyleSheet, TouchableOpacity, FlatList, View as RNView, Switch, Alert } from 'react-native';
 import { Text, View } from '@/components/Themed';
 import { useDua } from '@/contexts/DuaContext';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 import { Dua } from '@/types/dua';
 import { Swipeable } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,10 +17,36 @@ export default function SettingsModal() {
   const [showArchivedDuas, setShowArchivedDuas] = useState(false);
   const router = useRouter();
   const { flags, toggleSubscriptionFeature } = useFeatureFlags();
+  const { freeGenerationsRemaining, resetGenerations } = useSubscription();
 
   useEffect(() => {
     fetchArchivedDuas();
   }, []);
+
+  const handleResetGenerations = async () => {
+    Alert.alert(
+      "Reset Free Generations",
+      "Are you sure you want to reset free generations back to 3?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "Reset",
+          onPress: async () => {
+            try {
+              await resetGenerations();
+              Alert.alert("Success", "Free generations have been reset to 3");
+            } catch (error) {
+              console.error('Error resetting generations:', error);
+              Alert.alert("Error", "Failed to reset generations");
+            }
+          }
+        }
+      ]
+    );
+  };
 
   const toggleArchivedDuas = () => {
     setShowArchivedDuas(!showArchivedDuas);
@@ -55,13 +82,28 @@ export default function SettingsModal() {
       <Text style={styles.title}>Settings</Text>
 
       {__DEV__ && ( // Only show in development mode
-        <View style={styles.settingItem}>
-          <Text style={styles.settingLabel}>Enable Subscription Feature</Text>
-          <Switch
-            value={flags.subscriptionEnabled}
-            onValueChange={toggleSubscriptionFeature}
-          />
-        </View>
+        <>
+          <View style={styles.settingItem}>
+            <Text style={styles.settingLabel}>Enable Subscription Feature</Text>
+            <Switch
+              value={flags.subscriptionEnabled}
+              onValueChange={toggleSubscriptionFeature}
+            />
+          </View>
+
+          <View style={styles.settingItem}>
+            <View style={styles.settingContent}>
+              <Text style={styles.settingLabel}>Free Generations Remaining</Text>
+              <Text style={styles.generationsCount}>{freeGenerationsRemaining}</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.resetButton}
+              onPress={handleResetGenerations}
+            >
+              <Text style={styles.resetButtonText}>Reset</Text>
+            </TouchableOpacity>
+          </View>
+        </>
       )}
 
       <TouchableOpacity style={styles.button} onPress={toggleArchivedDuas}>
@@ -136,8 +178,31 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },
+  settingContent: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginRight: 10,
+  },
   settingLabel: {
     fontSize: 16,
     color: '#333',
+  },
+  generationsCount: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#4CAF50',
+  },
+  resetButton: {
+    backgroundColor: '#3B82F6',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 5,
+  },
+  resetButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

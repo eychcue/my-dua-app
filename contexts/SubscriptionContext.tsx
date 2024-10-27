@@ -1,15 +1,19 @@
+// File: contexts/SubscriptionContext.tsx
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import * as InAppPurchases from 'expo-in-app-purchases';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 
+export const FREE_GENERATIONS_KEY = 'freeGenerationsRemaining';
+
 const PRODUCTS = {
   MONTHLY: 'com.myduaapp.mydua.premium.monthly',
   YEARLY: 'com.myduaapp.mydua.premium.yearly'
 };
 
-const FREE_GENERATIONS_KEY = 'freeGenerationsRemaining';
+// const FREE_GENERATIONS_KEY = 'freeGenerationsRemaining';
 const SUBSCRIPTION_STATUS_KEY = 'subscriptionStatus';
 
 interface SubscriptionContextType {
@@ -18,6 +22,7 @@ interface SubscriptionContextType {
   products: InAppPurchases.IAPProductsResult | null;
   purchaseSubscription: (productId: string) => Promise<void>;
   decrementFreeGenerations: () => Promise<void>;
+  resetGenerations: () => Promise<void>;
   restorePurchases: () => Promise<void>;
   loading: boolean;
 }
@@ -96,6 +101,16 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
   };
 
+  const resetGenerations = async () => {
+    try {
+      await AsyncStorage.setItem(FREE_GENERATIONS_KEY, '3');
+      setFreeGenerationsRemaining(3);
+    } catch (error) {
+      console.error('Error resetting generations:', error);
+      throw error;
+    }
+  };
+
   const loadSubscriptionStatus = async () => {
     try {
       const status = await SecureStore.getItemAsync(SUBSCRIPTION_STATUS_KEY);
@@ -152,6 +167,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         products,
         purchaseSubscription,
         decrementFreeGenerations,
+        resetGenerations,
         restorePurchases,
         loading
       }}

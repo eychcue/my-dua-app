@@ -1,5 +1,9 @@
+// File: contexts/FeatureFlagsContext.tsx
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
+import { FREE_GENERATIONS_KEY } from '@/contexts/SubscriptionContext';
 
 interface FeatureFlags {
   subscriptionEnabled: boolean;
@@ -8,16 +12,23 @@ interface FeatureFlags {
 interface FeatureFlagsContextType {
   flags: FeatureFlags;
   toggleSubscriptionFeature: () => Promise<void>;
+  resetGenerations: () => Promise<void>;
 }
 
 const FeatureFlagsContext = createContext<FeatureFlagsContextType | undefined>(undefined);
 
 const FEATURE_FLAGS_KEY = 'featureFlags';
 
+// Check if we're in development mode
+const isDevelopment = __DEV__;
+
+const getDefaultFlags = (): FeatureFlags => ({
+  // Default to false in development, true in production
+  subscriptionEnabled: !isDevelopment,
+});
+
 export const FeatureFlagsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [flags, setFlags] = useState<FeatureFlags>({
-    subscriptionEnabled: false, // default to false
-  });
+  const [flags, setFlags] = useState<FeatureFlags>(getDefaultFlags());
 
   useEffect(() => {
     loadFlags();
@@ -27,7 +38,16 @@ export const FeatureFlagsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     try {
       const savedFlags = await AsyncStorage.getItem(FEATURE_FLAGS_KEY);
       if (savedFlags) {
-        setFlags(JSON.parse(savedFlags));
+        // In development, use saved flags
+        // In production, force subscriptionEnabled to true
+        if (isDevelopment) {
+          setFlags(JSON.parse(savedFlags));
+        } else {
+          setFlags({
+            ...JSON.parse(savedFlags),
+            subscriptionEnabled: true,
+          });
+        }
       }
     } catch (error) {
       console.error('Error loading feature flags:', error);
@@ -36,19 +56,36 @@ export const FeatureFlagsProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   const saveFlags = async (newFlags: FeatureFlags) => {
     try {
-      await AsyncStorage.setItem(FEATURE_FLAGS_KEY, JSON.stringify(newFlags));
-      setFlags(newFlags);
+      // In production, force subscriptionEnabled to true
+      const flagsToSave = isDevelopment
+        ? newFlags
+        : { ...newFlags, subscriptionEnabled: true };
+
+      await AsyncStorage.setItem(FEATURE_FLAGS_KEY, JSON.stringify(flagsToSave));
+      setFlags(flagsToSave);
     } catch (error) {
       console.error('Error saving feature flags:', error);
     }
   };
 
   const toggleSubscriptionFeature = async () => {
-    const newFlags = {
-      ...flags,
-      subscriptionEnabled: !flags.subscriptionEnabled,
-    };
-    await saveFlags(newFlags);
+    // Only allow toggling in development mode
+    if (isDevelopment) {
+      const newFlags = {
+        ...flags,
+        subscriptionEnabled: !flags.subscriptionEnabled,
+      };
+      await saveFlags(newFlags);
+    }
+  };
+
+  const resetGenerations = async () => {
+    try {
+      await AsyncStorage.setItem(FREE_GENERATIONS_KEY, '3');
+    } catch (error) {
+      console.error('Error resetting generations:', error);
+      throw error;
+    }
   };
 
   return (
@@ -56,6 +93,7 @@ export const FeatureFlagsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       value={{
         flags,
         toggleSubscriptionFeature,
+        resetGenerations,
       }}
     >
       {children}
